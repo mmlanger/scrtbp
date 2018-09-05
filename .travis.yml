@@ -8,13 +8,19 @@ sudo: false
 cache:
   pip: true
 
-install: pip install tox
+install: 
+  - pip install check-manifest pytest flake8 readme_renderer
+  - pip install numpy numba
 
-script: tox
+script: 
+  - check-manifest --ignore tests*
+  - python setup.py check -m -r -s
+  - flake8 .
+  - pytest tests
 
 notifications:
   email: false
 
 python:
-  - 3.6
-# - 3.7  # Planned: 2018-06
+  - "3.6"
+  - "3.7"
