@@ -10,7 +10,7 @@ jobs:
       - run:
           name: Install Requirements
           command: |
-            sudo pip install numpy numba pytest flake8
+            sudo pip install numpy numba pytest flake8 docutils
             pip list
       - run:
           name: Run setup.py check
@@ -27,7 +27,7 @@ jobs:
       - store_artifacts:
           path: artifacts
 
-  python-3-6-conda:
+  python-3.6-conda:
     docker:
       - image: circleci/python:3.6
         environment:
