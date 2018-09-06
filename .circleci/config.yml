@@ -1,0 +1,80 @@
+version: 2
+
+jobs:
+  python-3.6-pip:
+    docker:
+      - image: circleci/python:3.6
+
+    steps:
+      - checkout
+      - run:
+          name: Install Requirements
+          command: |
+            sudo pip install numpy numba pytest flake8
+            pip list
+      - run:
+          name: Run setup.py check
+          command: |
+            python setup.py check -m -r -s  
+      - run:
+          name: Run Tests
+          command: |
+            pytest tests
+      - run:
+          name: Run Stylechecks
+          command: |
+            flake8 .
+      - store_artifacts:
+          path: artifacts
+
+  python-3-6-conda:
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          PYTHON_VERSION: 3.6
+
+    steps:
+      - checkout
+      #- restore_cache:
+      #    keys:
+      #      - conda-36-v1-{{ checksum ".circleci/conda_setup.sh" }}
+      - run:
+          name: Create conda environment
+          command: |
+            .circleci/conda_setup.sh
+            conda list
+      #- save_cache:
+      #    key: conda-36-v1-{{ checksum ".circleci/conda_setup.sh" }}
+      #    paths:
+      #      - /home/circleci/miniconda/
+      - run:
+          name: Run Tests
+          command: |
+            . /home/circleci/miniconda/etc/profile.d/conda.sh
+            conda activate circleci
+            pytest tests
+      - run:
+          name: Run Stylechecks
+          command: |
+            . /home/circleci/miniconda/etc/profile.d/conda.sh
+            conda activate circleci
+            flake8 .
+      - store_artifacts:
+          path: artifacts
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - python-3.6-pip
+      - python-3.6-conda
+      #- python-3-7-conda:
+      #    requires:
+      #      - python-3.6-pip
+      #    filters:
+      #      branches:
+      #        only:
+      #          - master
+      #          - /release_.*/
+      #          - /conda_build_.*/

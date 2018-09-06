@@ -14,8 +14,8 @@ install:
 
 script: 
   - python setup.py check -m -r -s
-  - flake8 .
   - pytest tests
+  - flake8 .
 
 notifications:
   email: false

@@ -1,6 +1,6 @@
 # scrtbp
 
-Numerical treatment of the spatial restricted three body problem
+Numerical treatment of the spatial restricted three body problem.
 
 
 TODO Description
@@ -10,8 +10,8 @@ TODO Description
 ## Installing
 
 ```bash
-git clone https://github.com/mmlanger/saokit.git
-cd saokit
+git clone https://github.com/mmlanger/scrtbp.git
+cd scrtbp
 python setup.py install
 ```
 
@@ -21,4 +21,5 @@ TODO
 
 
 ## Acknowledgments
+
 TODO
