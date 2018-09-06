@@ -42,6 +42,8 @@ jobs:
           name: Create conda environment
           command: |
             .circleci/conda_setup.sh
+            . /home/circleci/miniconda/etc/profile.d/conda.sh
+            conda activate circleci
             conda list
       #- save_cache:
       #    key: conda-36-v1-{{ checksum ".circleci/conda_setup.sh" }}
