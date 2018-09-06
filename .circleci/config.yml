@@ -9,24 +9,24 @@ jobs:
       - run:
           name: Install requirements
           command: |
-            python -m venv venv
-            . venv/bin/activate
+            python -m venv $HOME/venv_circleci
+            . $HOME/venv_circleci/bin/activate
             pip install numpy numba pytest flake8 docutils
       - run:
           name: Check setup.py
           command: |
-            . venv/bin/activate
+            . $HOME/venv_circleci/bin/activate
             python setup.py check -m -r -s  
       - run:
           name: Run tests
           command: |
-            . venv/bin/activate
+            . $HOME/venv_circleci/bin/activate
             pip list
             pytest tests
       - run:
           name: Run linter
           command: |
-            . venv/bin/activate
+            . $HOME/venv_circleci/bin/activate
             flake8 .
       - store_artifacts:
           path: artifacts
