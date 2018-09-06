@@ -2,14 +2,16 @@ version: 2
 
 jobs:
   python-pip: &pip-template
+    docker:
+      - image: circleci/python:3
     steps:
       - checkout
       - run:
-        name: Install requirements
-        command: |
-          python -m venv venv
-          . venv/bin/activate
-          pip install numpy numba pytest flake8 docutils
+          name: Install requirements
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+            pip install numpy numba pytest flake8 docutils
       - run:
           name: Check setup.py
           command: |
@@ -27,6 +29,8 @@ jobs:
           path: artifacts
 
   python-conda: &conda-template
+    docker:
+      - image: circleci/python:3
     steps:
       - checkout
       #- restore_cache:
