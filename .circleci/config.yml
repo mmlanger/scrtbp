@@ -15,15 +15,18 @@ jobs:
       - run:
           name: Check setup.py
           command: |
+            . venv/bin/activate
             python setup.py check -m -r -s  
       - run:
           name: Run tests
           command: |
+            . venv/bin/activate
             pip list
             pytest tests
       - run:
           name: Run linter
           command: |
+            . venv/bin/activate
             flake8 .
       - store_artifacts:
           path: artifacts
