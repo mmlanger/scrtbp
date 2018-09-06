@@ -1,69 +1,95 @@
 version: 2
 
 jobs:
-  python-3.6-pip:
-    docker:
-      - image: circleci/python:3.6
-
+  python-pip: &pip-template
     steps:
       - checkout
       - run:
-          name: Install Requirements
-          command: |
-            sudo pip install numpy numba pytest flake8 docutils
-            pip list
+        name: Install requirements
+        command: |
+          python -m venv venv
+          . venv/bin/activate
+          pip install numpy numba pytest flake8 docutils
       - run:
-          name: Run setup.py check
+          name: Check setup.py
           command: |
             python setup.py check -m -r -s  
       - run:
-          name: Run Tests
+          name: Run tests
           command: |
+            pip list
             pytest tests
       - run:
-          name: Run Stylechecks
+          name: Run linter
           command: |
             flake8 .
       - store_artifacts:
           path: artifacts
 
-  python-3.6-conda:
-    docker:
-      - image: circleci/python:3.6
-        environment:
-          PYTHON_VERSION: 3.6
-
+  python-conda: &conda-template
     steps:
       - checkout
       #- restore_cache:
       #    keys:
-      #      - conda-36-v1-{{ checksum ".circleci/conda_setup.sh" }}
+      #      - conda-v1-{{ checksum "???" }}
       - run:
-          name: Create conda environment
+          name: Install miniconda
           command: |
-            .circleci/conda_setup.sh
-            . /home/circleci/miniconda/etc/profile.d/conda.sh
-            conda activate circleci
-            conda list
+            wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+            chmod +x miniconda.sh
+            ./miniconda.sh -b -p $HOME/miniconda
+            . $HOME/miniconda/etc/profile.d/conda.sh
+            conda create -n circleci --yes python=$PYTHON_VERSION \
+              numpy numba pytest flake8 docutils
       #- save_cache:
-      #    key: conda-36-v1-{{ checksum ".circleci/conda_setup.sh" }}
+      #    key: conda-v1-{{ checksum "???" }}
       #    paths:
       #      - /home/circleci/miniconda/
       - run:
-          name: Run Tests
+          name: Check setup.py
           command: |
-            . /home/circleci/miniconda/etc/profile.d/conda.sh
+            . $HOME/miniconda/etc/profile.d/conda.sh
             conda activate circleci
+            python setup.py check -m -r -s  
+      - run:
+          name: Run tests
+          command: |
+            . $HOME/miniconda/etc/profile.d/conda.sh
+            conda activate circleci
+            conda list
             pytest tests
       - run:
-          name: Run Stylechecks
+          name: Run linter
           command: |
-            . /home/circleci/miniconda/etc/profile.d/conda.sh
+            . $HOME/miniconda/etc/profile.d/conda.sh
             conda activate circleci
             flake8 .
       - store_artifacts:
           path: artifacts
+          
+  python-3.6-pip:
+    <<: *pip-template
+    docker:
+      - image: circleci/python:3.6
 
+  python-3.7-pip:
+    <<: *pip-template
+    docker:
+      - image: circleci/python:3.7
+
+  python-3.6-conda:
+    <<: *conda-template
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          PYTHON_VERSION: 3.6
+          
+  python-3.7-conda:
+    <<: *conda-template
+    docker:
+      - image: circleci/python:3.6
+        environment:
+          PYTHON_VERSION: 3.7
 
 workflows:
   version: 2
