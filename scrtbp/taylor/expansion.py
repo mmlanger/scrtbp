@@ -66,7 +66,15 @@ def CompTaylorTangent(poly_coeffs, x):
     return s + c
 
 
-@nb.jitclass([('coeffs', nb.float64[:, :])])
+@nb.njit(nopython=True)
+def sum_taylor_series(coeffs, delta_t, output):
+    state_dim = coeffs.shape[0]
+
+    for k in range(state_dim):
+        output[k] = CompHorner(coeffs[k], delta_t)
+
+
+@nb.jitclass([("coeffs", nb.float64[:, :])])
 class TaylorExpansion:
     def __init__(self, coeffs):
         self.coeffs = coeffs
@@ -84,23 +92,23 @@ class TaylorExpansion:
         return self.n_coeffs - 1
 
     def eval(self, delta_t, output):
-        state_dim = output.shape[0]
-
-        for k in range(state_dim):
+        for k in range(output.shape[0]):
             output[k] = CompHorner(self.coeffs[k], delta_t)
 
     def tangent(self, delta_t, output):
-        state_dim = output.shape[0]
-
-        for k in range(state_dim):
+        for k in range(output.shape[0]):
             output[k] = CompTaylorTangent(self.coeffs[k], delta_t)
 
 
 def generate_func_adapter(py_func):
     func = nb.njit(py_func)
 
-    @nb.jitclass([('state_cache', nb.float64[:]),
-                  ('expansion', TaylorExpansion.class_type.instance_type)])
+    adapter_spec = [
+        ("state_cache", nb.float64[:]),
+        ("expansion", TaylorExpansion.class_type.instance_type),
+    ]
+
+    @nb.jitclass(adapter_spec)
     class FuncAdapter:
         def __init__(self, expansion):
             self.expansion = expansion
