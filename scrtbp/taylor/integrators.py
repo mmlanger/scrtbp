@@ -2,10 +2,36 @@ from scrtbp.taylor import expansion
 import numpy as np
 from numba import njit
 
+fixed_stepper_spec = [("step_num", nb.int64), ("step_limit", nb.int64),
+                      ("step", nb.int64), ("t_init", nb.int64),
+                      ("t_now", nb.float64), ("t_next", nb.float64)]
 
-def generate_fixed_step_integrator(
-    taylor_coeff_func, state_dim, extra_dim, dt, order=30
-):
+
+@nb.jitclass(fixed_stepper_spec)
+class FixedStepper:
+    def __init__(self, t0, step, step_limit):
+        self.step_num = 0
+        self.step_limit = step_limit
+        self.step = step
+
+        self.t_init = t0
+        self.t_now = t0
+        self.t_next = t0 + step
+
+    def valid(self):
+        return self.step_num < self.step_limit
+
+    def advance(self):
+        self.step_num += 1
+        self.t_now = self.t_next
+        self.t_next = self.t_init + (self.step_num + 1) * self.step
+
+
+def generate_fixed_step_integrator(taylor_coeff_func,
+                                   state_dim,
+                                   extra_dim,
+                                   dt,
+                                   order=30):
     @njit
     def fixed_step_integration(input_state, times):
         n_points = times.shape[0]
@@ -26,7 +52,11 @@ def generate_fixed_step_integrator(
     return fixed_step_integration
 
 
-def generate_dense_integrator(taylor_coeff_func, state_dim, extra_dim, step, order=30):
+def generate_dense_integrator(taylor_coeff_func,
+                              state_dim,
+                              extra_dim,
+                              step,
+                              order=30):
     @njit
     def dense_integration(input_state, times, init_t0=None):
         """

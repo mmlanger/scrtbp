@@ -118,7 +118,7 @@ def generate_func_adapter(py_func):
             self.expansion.eval(delta_t, self.state_cache)
             return func(self.state_cache)
 
-        def eval_state(self, state):
+        def eval_from_state(self, state):
             return func(state)
 
     return FuncAdapter

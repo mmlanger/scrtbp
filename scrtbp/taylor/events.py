@@ -1,7 +1,12 @@
 import numpy as np
-from numba import njit
+import numba as nb
 
 from scrtbp.taylor.expansion import TaylorExpansion, generate_func_adapter
+from scrtbp.util import root
+
+
+class MaxStepsExceededException(Exception):
+    pass
 
 
 def generate_event_solver(taylor_coeff_func,
@@ -18,15 +23,36 @@ def generate_event_solver(taylor_coeff_func,
 
         def py_root_condition(fa, fb):
             return fa < 0.0 and 0.0 < fb
-
     else:
 
         def py_root_condition(fa, fb):
             return fa * fb < 0.0
 
-    root_condition = njit(py_root_condition)
+    root_condition = nb.njit(py_root_condition)
 
-    @njit
+    step_cache_spec = [("state", nb.float64[:]), ("t", nb.float64),
+                       ("f", nb.float64)]
+
+    @nb.jitclass(step_cache_spec)
+    class EventTracker:
+        def __init__(self, state0, t0, f0, expansion):
+            self.state = state0
+            self.t = t0
+            self.f = f0
+
+        def read_from_cache(self, cache):
+            self.state = cache.state
+            self.t = cache.t
+            self.f = chache.f
+
+        def advance(self):
+            pass
+
+    @nb.njit
+    def advance_chaches(chache_now, chache_next):
+        pass
+
+    @nb.njit
     def solve_points(input_state, n_points, t0=0.0):
         """
             solves trajectory step wise, looks if its trajectory 
@@ -43,18 +69,50 @@ def generate_event_solver(taylor_coeff_func,
         series = TaylorExpansion(np.empty((state_dim, order + 1)))
         event_func = FuncAdapter(series)
 
-        state_now = np.empty(state_dim)
-        state_next = np.empty(state_dim)
-        brackets = np.empty((2, 2))
+        state_now = input_state.copy()
+        f_now = event_func.eval_from_state(state_now)
 
-        state_next = input_state
+        state_next = np.empty(state_dim)
+
+        stepper = FixedStepper(t0, step, max_steps)
+
+        while stepper.valid():
+            taylor_coeff_func(state_now, series.coeffs, extra_coeffs)
+
+            f_next = event_func.eval(step)
+            state_next = event_func.state_cache
+
+            # searches for root in current step interval t_now, t_next
+            if root_condition(f_now, f_next):
+                brackets = root.Brackets(0.0, f_now, step, f_next)
+                root_step = root.solve(event_func, brackets)
+
+                series.eval(root_step, points[i])
+                t_points[i] = t_now + root_step
+                break
+            elif f_now == 0.0:
+                # immediatly found a root
+                points[i] = state_now
+                t_points[i] = t_now
+                break
+            elif f_next == 0.0:
+                # ignore upcoming root, will be caught in next step
+                pass
+            else:
+                # no root in interval, continue steps
+                pass
+
+            stepper.advance()
+            state_now = state_next
+        else:
+            raise MaxStepsExceededException
+
         t_next = t0
         f_next = event_func.eval_state(state_next)
         step_num = 0
 
         for i in range(n_points):
-            # calculates trajectory steps until intersection is found
-            # (or unfavourably max_steps is reached)
+            # compute trajectory steps until intersection is found
             for j in range(max_steps):
                 state_now = state_next
                 t_now = t_next
@@ -73,23 +131,9 @@ def generate_event_solver(taylor_coeff_func,
                 # searches for root in current step interval t_now, t_next
                 if root_condition(f_now, f_next):
                     # 0 instead of t_now, since taylor stutzstelle already is t_now
-                    brackets[0, 0] = 0.0
-                    brackets[0, 1] = f_now
-                    brackets[1, 0] = step
-                    brackets[1, 1] = f_next
+                    brackets = root.Brackets(0.0, f_now, step, f_next)
 
-                    # bracket size
-                    diff_curr = abs(brackets[0, 0] - brackets[1, 0])
-                    # hack: just need a worse diff (only used once)
-                    diff_prev = 2.0 * diff_curr
-
-                    # until bracket size doesn't change anymore, do ...
-                    while diff_prev != diff_curr:
-                        root_step = bracket_iteration(event_func, brackets)
-                        diff_prev = diff_curr
-                        diff_curr = abs(brackets[0, 0] - brackets[1, 0])
-
-                    # uses taylor series around t_now to approximate point[i]
+                    root_step = root.solve(event_func, brackets)
                     series.eval(root_step, points[i])
                     t_points[i] = t_now + root_step
                     break
@@ -104,13 +148,9 @@ def generate_event_solver(taylor_coeff_func,
                 else:
                     # no root in interval, continue steps
                     pass
-            # previously: if max_steps is exceeded, point[i] will be random and make no sense!
-            # if max_steps is exceeded, print error, return points
-            # ATTENTION: points from i onward will be random remnants from np.empty!
+
             if j == (max_steps - 1):
-                # raise Exception('ERROR: max_steps exceeded')
-                print("ERROR: max_steps ", max_steps, " exceeded")
-                return points, t_points
+                raise MaxStepsExceededException
 
         return points, t_points
 
