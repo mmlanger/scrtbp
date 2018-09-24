@@ -74,7 +74,7 @@ def sum_taylor_series(coeffs, delta_t, output):
         output[k] = CompHorner(coeffs[k], delta_t)
 
 
-@nb.jitclass([("coeffs", nb.float64[:, :])])
+@nb.jitclass(dict(coeffs=nb.float64[:, :]))
 class TaylorExpansion:
     def __init__(self, coeffs):
         self.coeffs = coeffs
@@ -103,10 +103,9 @@ class TaylorExpansion:
 def generate_func_adapter(py_func):
     func = nb.njit(py_func)
 
-    adapter_spec = [
-        ("state_cache", nb.float64[:]),
-        ("expansion", TaylorExpansion.class_type.instance_type),
-    ]
+    adapter_spec = dict(
+        state_cache=nb.float64[:],
+        expansion=TaylorExpansion.class_type.instance_type)
 
     @nb.jitclass(adapter_spec)
     class FuncAdapter:

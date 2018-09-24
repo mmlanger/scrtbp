@@ -9,13 +9,18 @@ class MaxStepsExceededException(Exception):
     pass
 
 
+class NoEventException(Exception):
+    pass
+
+
 def generate_event_solver(taylor_coeff_func,
                           poincare_char_func,
                           state_dim,
                           extra_dim,
                           step=0.01,
                           order=30,
-                          max_steps=1000000,
+                          max_event_steps=1000000,
+                          max_steps=1000000000,
                           one_way_mode=True):
     FuncAdapter = generate_func_adapter(poincare_char_func)
 
@@ -30,128 +35,167 @@ def generate_event_solver(taylor_coeff_func,
 
     root_condition = nb.njit(py_root_condition)
 
-    step_cache_spec = [("state", nb.float64[:]), ("t", nb.float64),
-                       ("f", nb.float64)]
+    taylor_adapter_spec = dict(
+        state=nb.float64[:],
+        extra_coeffs=nb.float64[:, :],
+        coeffs=nb.float64[:, :],
+        series=TaylorExpansion.class_type.instance_type)
 
-    @nb.jitclass(step_cache_spec)
-    class EventTracker:
-        def __init__(self, state0, t0, f0, expansion):
-            self.state = state0
-            self.t = t0
-            self.f = f0
+    @nb.jitclass(taylor_adapter_spec)
+    class TaylorAdapter:
+        def __init__(self, state):
+            self.state = state
+            self.extra_coeffs = np.empty((extra_dim, order))
+            self.coeffs = np.empty((state_dim, order + 1))
+            self.series = TaylorExpansion(self.coeffs)
 
-        def read_from_cache(self, cache):
-            self.state = cache.state
-            self.t = cache.t
-            self.f = chache.f
+        def set_state(self, state):
+            self.state = state
+            self.compute()
+
+        def advance(self, step):
+            self.eval(step, self.state)
+            self.compute()
+
+        def compute(self):
+            taylor_coeff_func(self.state, self.coeffs, self.extra_coeffs)
+
+        def eval(self, delta_t, output):
+            self.series.eval(delta_t, output)
+
+        def tangent(self, delta_t, output):
+            self.series.tangent(delta_t, output)
+
+    fixed_stepper_spec = dict(
+        taylor=TaylorAdapter.class_type.instance_type,
+        step=nb.float64,
+        step_num=nb.int64,
+        t0=nb.float64,
+        t=nb.float64)
+
+    @nb.jitclass(fixed_stepper_spec)
+    class FixedStepper:
+        def __init__(self, state_init, t_init, step):
+            self.taylor = TaylorAdapter(state_init)
+
+            self.step = step
+            self.step_num = 0
+
+            self.t0 = t_init
+            self.t = t_init
 
         def advance(self):
-            pass
+            self.taylor.advance(self.step)
+            self.step_num += 1
 
-    @nb.njit
-    def advance_chaches(chache_now, chache_next):
-        pass
+        def valid(self):
+            return True
+
+        @property
+        def next_t(self):
+            return self.t0 + (self.step_num + 1) * self.step
+
+    event_observer_spec = dict(
+        stepper=FixedStepper.class_type.instance_type,
+        func=FuncAdapter.class_type.instance_type)
+
+    @nb.jitclass(event_observer_spec)
+    class EventObserver:
+        def __init__(self, stepper):
+            self.stepper = stepper
+            self.func = FuncAdapter(stepper.taylor.series)
+
+            self.update()
+
+        def update(self):
+            self.t = self.stepper.t
+            self.f = self.func.eval_from_state(self.stepper.state)
+            self.next_t = self.stepper.next_t
+            self.next_f = self.func.eval(self.stepper.step)
+
+        def cached_update(self):
+            if self.next_t == self.stepper.t:
+                self.t = self.next_t
+                self.f = self.next_f
+                self.next_t = self.stepper.next_t
+                self.next_f = self.func.eval(self.stepper.step)
+            else:
+                self.update()
+
+        def event_detected(self):
+            if self.t != self.stepper.t:
+                self.cached_update()
+
+            return self.f == 0.0 or root_condition(self.f, self.next_f)
+
+        def get_brackets(self):
+            return root.Brackets(0.0, self.f, self.stepper.step, self.next_f)
+
+        def resolve_event(self):
+            if self.f == 0.0:
+                return 0.0
+            else:
+                brackets = self.get_brackets()
+                return root.solve(self.func, brackets)
+
+        def extract_event(self, output):
+            if self.f == 0.0:
+                output = self.stepper.taylor.state
+                return self.stepper.t
+            else:
+                root_step = self.resolve_event()
+                self.stepper.taylor.eval(root_step, output)
+                return self.stepper.t + root_step
+
+    limiter_proxy_spec = dict(
+        stepper=FixedStepper.class_type.instance_type,
+        counter=nb.int64,
+        event_limit=nb.int64,
+        step_limit=nb.int64)
+
+    @nb.jitclass(limiter_proxy_spec)
+    class StepLimiterProxy:
+        def __init__(self, stepper, event_limit, step_limit):
+            self.stepper = stepper
+            self.counter = 0
+            self.event_limit = event_limit
+            self.step_limit = step_limit
+
+        def reset_constraint(self):
+            self.counter = 0
+
+        def advance(self):
+            self.stepper.advance()
+            self.counter += 1
+
+        def valid(self):
+            event_steps_valid = self.counter < self.event_limit
+            max_steps_valid = self.stepper.step_num < self.step_limit
+
+            return event_steps_valid and max_steps_valid
 
     @nb.njit
     def solve_points(input_state, n_points, t0=0.0):
-        """
-            solves trajectory step wise, looks if its trajectory 
-            crosses the poincare section during a step via 
-            root search, saves n_points many section points 
-            and their time of section
-
-            n_points = number of points inside poincare section to be calculated
-        """
         points = np.empty((n_points, state_dim))
-        t_points = np.empty(n_points)
+        times = np.empty(n_points)
 
-        extra_coeffs = np.empty((extra_dim, order))
-        series = TaylorExpansion(np.empty((state_dim, order + 1)))
-        event_func = FuncAdapter(series)
+        stepper = FixedStepper(input_state, t0, step)
+        observer = EventObserver(stepper)
+        limiter = StepLimiterProxy(stepper, max_event_steps, max_steps)
 
-        state_now = input_state.copy()
-        f_now = event_func.eval_from_state(state_now)
-
-        state_next = np.empty(state_dim)
-
-        stepper = FixedStepper(t0, step, max_steps)
-
-        while stepper.valid():
-            taylor_coeff_func(state_now, series.coeffs, extra_coeffs)
-
-            f_next = event_func.eval(step)
-            state_next = event_func.state_cache
-
-            # searches for root in current step interval t_now, t_next
-            if root_condition(f_now, f_next):
-                brackets = root.Brackets(0.0, f_now, step, f_next)
-                root_step = root.solve(event_func, brackets)
-
-                series.eval(root_step, points[i])
-                t_points[i] = t_now + root_step
-                break
-            elif f_now == 0.0:
-                # immediatly found a root
-                points[i] = state_now
-                t_points[i] = t_now
-                break
-            elif f_next == 0.0:
-                # ignore upcoming root, will be caught in next step
-                pass
-            else:
-                # no root in interval, continue steps
-                pass
-
-            stepper.advance()
-            state_now = state_next
+        i = 0
+        while limiter.valid():
+            if observer.event_detected():
+                i += 1
+                times[i] = observer.extract_event(points[i])
+                if (i + 1) < n_points:
+                    limiter.reset_constraint()
+                else:
+                    break
+            limiter.advance()
         else:
             raise MaxStepsExceededException
 
-        t_next = t0
-        f_next = event_func.eval_state(state_next)
-        step_num = 0
-
-        for i in range(n_points):
-            # compute trajectory steps until intersection is found
-            for j in range(max_steps):
-                state_now = state_next
-                t_now = t_next
-                f_now = f_next
-
-                # compute taylor series around state_now
-                taylor_coeff_func(state_now, series.coeffs, extra_coeffs)
-
-                # previously j, which is reset after each new point !
-                t_next = t0 + (step_num + 1) * step
-                f_next = event_func.eval(step)
-                state_next = event_func.state_cache
-
-                step_num = step_num + 1
-
-                # searches for root in current step interval t_now, t_next
-                if root_condition(f_now, f_next):
-                    # 0 instead of t_now, since taylor stutzstelle already is t_now
-                    brackets = root.Brackets(0.0, f_now, step, f_next)
-
-                    root_step = root.solve(event_func, brackets)
-                    series.eval(root_step, points[i])
-                    t_points[i] = t_now + root_step
-                    break
-                elif f_now == 0.0:
-                    # immediatly found a root
-                    points[i] = state_now
-                    t_points[i] = t_now
-                    break
-                elif f_next == 0.0:
-                    # ignore upcoming root, will be caught in next step
-                    pass
-                else:
-                    # no root in interval, continue steps
-                    pass
-
-            if j == (max_steps - 1):
-                raise MaxStepsExceededException
-
-        return points, t_points
+        return points, times
 
     return solve_points
