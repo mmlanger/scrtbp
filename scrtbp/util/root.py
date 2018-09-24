@@ -1,12 +1,16 @@
 import numpy as np
 import numba as nb
 
-bracket_spec = [
-    ("left_x", nb.float64),
-    ("left_fx", nb.float64),
-    ("right_x", nb.float64),
-    ("right_fx", nb.float64),
-]
+
+class InvalidBracketsException(Exception):
+    pass
+
+
+bracket_spec = dict(
+    left_x=nb.float64,
+    left_fx=nb.float64,
+    right_x=nb.float64,
+    right_fx=nb.float64)
 
 
 @nb.jitclass(bracket_spec)
@@ -25,7 +29,7 @@ class Brackets:
         elif f1 * f2 > 0.0:
             msg = ("Interval doesn't contain a root!"
                    "I.e. f(a) < 0 < f(b) or f(a) > 0 > f(b)")
-            raise Exception(msg)
+            raise InvalidBracketsException(msg)
         else:
             if x1 <= x2:
                 self.left_x = x1
@@ -70,7 +74,8 @@ class Brackets:
                 self.right_x = x
                 self.right_fx = fx
             else:
-                raise Exception("Inconsistent bracket state!")
+                msg = "Inconsistent bracket state!"
+                raise InvalidBracketsException(msg)
 
 
 @nb.njit

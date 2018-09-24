@@ -36,3 +36,14 @@ def test_func_collection():
 
     result = root.solve_py_root(lambda x: (2 * x - 1) / x, 0.00001, 1.0)
     assert math.isclose(result, 0.5, rel_tol=0.0, abs_tol=4e-16)
+
+
+def test_invalid_brackets():
+    try:
+        result = root.solve_py_root(lambda x: x**2, 0.1, 1.5)
+    except root.InvalidBracketsException:
+        assert True
+    except:
+        assert False
+    else:
+        assert False
