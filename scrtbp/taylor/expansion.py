@@ -55,7 +55,7 @@ def CompHorner(poly_coeffs, x):
 @nb.njit
 def CompTaylorTangent(poly_coeffs, x):
     n = poly_coeffs.shape[0] - 1
-    s = poly_coeffs[n]
+    s = n * poly_coeffs[n]
     c = 0.0
 
     for k in range(n - 2, -1, -1):
@@ -75,7 +75,7 @@ def sum_taylor_series(coeffs, delta_t, output):
 
 
 @nb.jitclass(dict(coeffs=nb.float64[:, :]))
-class TaylorExpansion:
+class SeriesAdapter:
     def __init__(self, coeffs):
         self.coeffs = coeffs
 
@@ -100,12 +100,56 @@ class TaylorExpansion:
             output[k] = CompTaylorTangent(self.coeffs[k], delta_t)
 
 
-def generate_func_adapter(py_func):
+def generate_taylor_expansion(py_coeff_func, state_dim, extra_dim):
+    taylor_adapter_spec = dict(
+        order=nb.int32,
+        state=nb.float64[:],
+        extra_coeffs=nb.float64[:, :],
+        coeffs=nb.float64[:, :],
+        series=SeriesAdapter.class_type.instance_type)
+
+    taylor_coeff_func = nb.njit(py_coeff_func)
+
+    @nb.jitclass(taylor_adapter_spec)
+    class TaylorExpansion:
+        def __init__(self, state, order):
+            self.order = order
+            self.state = state
+            self.init_expansion()
+
+        def init_expansion(self):
+            self.extra_coeffs = np.empty((extra_dim, self.order))
+            self.coeffs = np.empty((state_dim, self.order + 1))
+            self.series = SeriesAdapter(self.coeffs)
+
+        def expand(self, state, order):
+            self.order = order
+            self.state = state
+            self.init_expansion()
+            self.compute()
+
+        def advance(self, step):
+            self.eval(step, self.state)
+            self.compute()
+
+        def compute(self):
+            taylor_coeff_func(self.state, self.coeffs, self.extra_coeffs)
+
+        def eval(self, delta_t, output):
+            self.series.eval(delta_t, output)
+
+        def tangent(self, delta_t, output):
+            self.series.tangent(delta_t, output)
+
+    return TaylorExpansion
+
+
+def generate_func_adapter(TaylorExpansionClass, py_func):
     func = nb.njit(py_func)
 
     adapter_spec = dict(
         state_cache=nb.float64[:],
-        expansion=TaylorExpansion.class_type.instance_type)
+        expansion=TaylorExpansionClass.class_type.instance_type)
 
     @nb.jitclass(adapter_spec)
     class FuncAdapter:

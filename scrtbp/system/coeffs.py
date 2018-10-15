@@ -4,6 +4,9 @@ from scrtbp.taylor import rules
 
 
 def generate_taylor_coeffs(mu):
+    state_dim = 6
+    extra_dim = 17
+
     gamma1 = mu - 1
     gamma2 = -mu
     exponent = -3 / 2
@@ -75,4 +78,4 @@ def generate_taylor_coeffs(mu):
             py[next_n] = (-px[n] + c[n]) / next_n
             pz[next_n] = f[n] / next_n
 
-    return taylor_coeff_func
+    return taylor_coeff_func, state_dim, extra_dim

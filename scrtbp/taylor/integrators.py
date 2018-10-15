@@ -2,30 +2,6 @@ from scrtbp.taylor import expansion
 import numpy as np
 from numba import njit
 
-fixed_stepper_spec = [("step_num", nb.int64), ("step_limit", nb.int64),
-                      ("step", nb.int64), ("t_init", nb.int64),
-                      ("t_now", nb.float64), ("t_next", nb.float64)]
-
-
-@nb.jitclass(fixed_stepper_spec)
-class FixedStepper:
-    def __init__(self, t0, step, step_limit):
-        self.step_num = 0
-        self.step_limit = step_limit
-        self.step = step
-
-        self.t_init = t0
-        self.t_now = t0
-        self.t_next = t0 + step
-
-    def valid(self):
-        return self.step_num < self.step_limit
-
-    def advance(self):
-        self.step_num += 1
-        self.t_now = self.t_next
-        self.t_next = self.t_init + (self.step_num + 1) * self.step
-
 
 def generate_fixed_step_integrator(taylor_coeff_func,
                                    state_dim,
@@ -37,15 +13,7 @@ def generate_fixed_step_integrator(taylor_coeff_func,
         n_points = times.shape[0]
 
         points = np.empty((n_points, state_dim))
-        extra_coeffs = np.empty((extra_dim, order))
-        taylor_coeffs = np.empty((state_dim, order + 1))
-
-        series = expansion.TaylorExpansion(taylor_coeffs)
-        points[0] = input_state
-
-        for i in range(n_points - 1):
-            taylor_coeff_func(points[i], series.coeffs, extra_coeffs)
-            series.eval(dt, points[i + 1])
+        # TODO?
 
         return points
 
@@ -71,60 +39,60 @@ def generate_dense_integrator(taylor_coeff_func,
         # phase space points, will be evaluated at times
         points = np.empty((n_points, state_dim))
 
-        # coefficient arrays
-        extra_coeffs = np.empty((extra_dim, order))
-        taylor_coeffs = np.empty((state_dim, order + 1))
+        # # coefficient arrays
+        # extra_coeffs = np.empty((extra_dim, order))
+        # taylor_coeffs = np.empty((state_dim, order + 1))
 
-        series = expansion.TaylorExpansion(taylor_coeffs)
+        # series = expansion.TaylorExpansion(taylor_coeffs)
 
-        # checks, if initital time should be first entry of times or init_t0
-        if init_t0 is None:
-            init_t0 = times[0]
+        # # checks, if initital time should be first entry of times or init_t0
+        # if init_t0 is None:
+        #     init_t0 = times[0]
 
-        cur_t = init_t0  # current time step (taylor is expanded around these)
-        next_t = cur_t + step
+        # cur_t = init_t0  # current time step (taylor is expanded around these)
+        # next_t = cur_t + step
 
-        # state at current time step; used to estimate state in [cur_t, next_t] via taylor expansion
-        cur_state = np.empty(state_dim)
-        cur_state = input_state
+        # # state at current time step; used to estimate state in [cur_t, next_t] via taylor expansion
+        # cur_state = np.empty(state_dim)
+        # cur_state = input_state
 
-        # phase space point counter
-        i = 0
+        # # phase space point counter
+        # i = 0
 
-        # time step counter (step_num = 0 is initital time)
-        step_num = 1
+        # # time step counter (step_num = 0 is initital time)
+        # step_num = 1
 
-        while i < n_points:
-            # taylor coeff for current time step
-            taylor_coeff_func(cur_state, taylor_coeffs, extra_coeffs)
+        # while i < n_points:
+        #     # taylor coeff for current time step
+        #     taylor_coeff_func(cur_state, taylor_coeffs, extra_coeffs)
 
-            # checks for all times in the interval [cur_t, next_t]
-            while times[i] < next_t:
-                # if time lies on current time step
-                if cur_t == times[i]:
-                    # current state is a phase space point
-                    points[i, :] = cur_state
-                    i += 1
-                # if time lies in interval
-                elif cur_t < times[i]:
-                    target_step = times[i] - cur_t
-                    # sums up taylor series around t0 = cur_t with dt = target_step
-                    series.eval(target_step, points[i])
-                    i += 1
+        #     # checks for all times in the interval [cur_t, next_t]
+        #     while times[i] < next_t:
+        #         # if time lies on current time step
+        #         if cur_t == times[i]:
+        #             # current state is a phase space point
+        #             points[i, :] = cur_state
+        #             i += 1
+        #         # if time lies in interval
+        #         elif cur_t < times[i]:
+        #             target_step = times[i] - cur_t
+        #             # sums up taylor series around t0 = cur_t with dt = target_step
+        #             series.eval(target_step, points[i])
+        #             i += 1
 
-                # if the last time in times lies in the interval [cur_t, next_t], break
-                if not i < n_points:
-                    break
+        #         # if the last time in times lies in the interval [cur_t, next_t], break
+        #         if not i < n_points:
+        #             break
 
-            # advance a step to next time step
-            cur_t = next_t
+        #     # advance a step to next time step
+        #     cur_t = next_t
 
-            # sums up taylor series to get curr_state at new time step
-            series.eval(step, cur_state)
-            step_num += 1
+        #     # sums up taylor series to get curr_state at new time step
+        #     series.eval(step, cur_state)
+        #     step_num += 1
 
-            # FIXME: not next_t = cur_t + step to avoid error
-            next_t = init_t0 + step_num * step
+        #     # FIXME: not next_t = cur_t + step to avoid error
+        #     next_t = init_t0 + step_num * step
 
         return points
 
