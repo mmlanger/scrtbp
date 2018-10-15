@@ -1,4 +1,3 @@
-import numpy as np
 from numba import njit
 from scrtbp.taylor import rules
 

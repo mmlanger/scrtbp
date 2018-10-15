@@ -39,7 +39,7 @@ def generate_poincare_tools(mu, Cj, tolerance=1e-15):
         py_plus = 1 / np.sqrt(3) * (2 * prho - px_plus)
         py_minus = 1 / np.sqrt(3) * (2 * prho - px_minus)
 
-        Cj_plus = jacobi(([x, y, z, px_plus, py_plus, pz]))
+        # Cj_plus = jacobi(([x, y, z, px_plus, py_plus, pz]))
         Cj_minus = jacobi(([x, y, z, px_minus, py_minus, pz]))
 
         if abs(Cj_minus - Cj) <= tolerance:
@@ -52,8 +52,8 @@ def generate_poincare_tools(mu, Cj, tolerance=1e-15):
         #    py = py_plus
         else:
             print(
-                "jacobi does not match Cj; initial state {0} invalid for Cj = {1}".
-                format(poincare_coord, Cj))
+                "jacobi does not match Cj; initial state {0} invalid for Cj = {1}"
+                .format(poincare_coord, Cj))
             return
 
         phase_space_coord[0] = x

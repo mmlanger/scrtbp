@@ -1,6 +1,4 @@
 import math
-
-import numba as nb
 import numpy as np
 
 from scrtbp.util import root
@@ -40,10 +38,10 @@ def test_func_collection():
 
 def test_invalid_brackets():
     try:
-        result = root.solve_py_root(lambda x: x**2, 0.1, 1.5)
+        root.solve_py_root(lambda x: x**2, 0.1, 1.5)
     except root.InvalidBracketsException:
         assert True
-    except:
+    except Exception:
         assert False
     else:
         assert False

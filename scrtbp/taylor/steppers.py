@@ -1,7 +1,5 @@
 import numba as nb
 
-from scrtbp.taylor import expansion
-
 
 class MaxStepsExceededException(Exception):
     pass

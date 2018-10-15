@@ -28,11 +28,6 @@ def generate_dense_integrator(taylor_coeff_func,
     @njit
     def dense_integration(input_state, times, init_t0=None):
         """
-            calculates phase space points at each t in 'times' with an integration 
-            step size for the taylor coeff of 'step'
-
-            - times needs to be monotonely increasing!
-            - times can be choosen independently of step
         """
         n_points = times.shape[0]
 
@@ -52,7 +47,8 @@ def generate_dense_integrator(taylor_coeff_func,
         # cur_t = init_t0  # current time step (taylor is expanded around these)
         # next_t = cur_t + step
 
-        # # state at current time step; used to estimate state in [cur_t, next_t] via taylor expansion
+        # # state at current time step
+        # # used to estimate state in [cur_t, next_t]
         # cur_state = np.empty(state_dim)
         # cur_state = input_state
 
@@ -76,11 +72,11 @@ def generate_dense_integrator(taylor_coeff_func,
         #         # if time lies in interval
         #         elif cur_t < times[i]:
         #             target_step = times[i] - cur_t
-        #             # sums up taylor series around t0 = cur_t with dt = target_step
+        #             # sums up series around t0 = cur_t with dt = target_step
         #             series.eval(target_step, points[i])
         #             i += 1
 
-        #         # if the last time in times lies in the interval [cur_t, next_t], break
+        #         # if the last time in times lies in the interval [cur_t, next_t]
         #         if not i < n_points:
         #             break
 
