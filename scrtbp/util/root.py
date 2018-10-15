@@ -133,7 +133,8 @@ def bracket_iteration(func_adapter, brackets):
     # ridder failed, try regula falsi
     denom = brackets.right_fx - brackets.left_fx
     if denom != 0.0:
-        num = brackets.left_x * brackets.right_fx - brackets.right_x * brackets.left_fx
+        num = (brackets.left_x * brackets.right_fx -
+               brackets.right_x * brackets.left_fx)
         x = num / denom
         if brackets.is_inside(x):
             brackets.update(x, func_adapter.eval(x))

@@ -86,7 +86,8 @@ def generate_event_solver(taylor_coeff_func,
                           max_event_steps=1000000,
                           max_steps=1000000000,
                           one_way_mode=True):
-    TaylorExpansion = expansion.generate_taylor_expansion(taylor_coeff_func)
+    TaylorExpansion = expansion.generate_taylor_expansion(
+        taylor_coeff_func, state_dim, extra_dim)
     FuncAdapter = expansion.generate_func_adapter(TaylorExpansion,
                                                   poincare_char_func)
     Stepper = steppers.generate_fixed_stepper(TaylorExpansion)
