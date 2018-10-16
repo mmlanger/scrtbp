@@ -58,7 +58,7 @@ def quotient(r, u, v, n):
 @njit
 def power(p, u, alpha, n):
     if n == 0:
-        return u[0]**alpha
+        return u[0] ** alpha
 
     result = 0.0
     c = 0.0

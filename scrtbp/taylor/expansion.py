@@ -106,7 +106,8 @@ def generate_taylor_expansion(py_coeff_func, state_dim, extra_dim):
         state=nb.float64[:],
         extra_coeffs=nb.float64[:, :],
         coeffs=nb.float64[:, :],
-        series=SeriesAdapter.class_type.instance_type)
+        series=SeriesAdapter.class_type.instance_type,
+    )
 
     taylor_coeff_func = nb.njit(py_coeff_func)
 
@@ -149,7 +150,8 @@ def generate_func_adapter(TaylorExpansionClass, py_func):
 
     adapter_spec = dict(
         state_cache=nb.float64[:],
-        expansion=TaylorExpansionClass.class_type.instance_type)
+        expansion=TaylorExpansionClass.class_type.instance_type,
+    )
 
     @nb.jitclass(adapter_spec)
     class FuncAdapter:

@@ -16,11 +16,16 @@ def generate_tools(mu):
         r1_fac = (1.0 - mu) / (radicand_1 * np.sqrt(radicand_1))
         r2_fac = mu / (radicand_2 * np.sqrt(radicand_2))
 
-        rhs = np.array([
-            px + y, py - x, pz,
-            py - (x + mu) * r1_fac - (x + mu - 1.0) * r2_fac,
-            -px - y * (r1_fac + r2_fac), -z * (r1_fac + r2_fac)
-        ])
+        rhs = np.array(
+            [
+                px + y,
+                py - x,
+                pz,
+                py - (x + mu) * r1_fac - (x + mu - 1.0) * r2_fac,
+                -px - y * (r1_fac + r2_fac),
+                -z * (r1_fac + r2_fac),
+            ]
+        )
 
         return rhs
 

@@ -3,11 +3,9 @@ import numpy as np
 from numba import njit
 
 
-def generate_fixed_step_integrator(taylor_coeff_func,
-                                   state_dim,
-                                   extra_dim,
-                                   dt,
-                                   order=30):
+def generate_fixed_step_integrator(
+    taylor_coeff_func, state_dim, extra_dim, dt, order=30
+):
     @njit
     def fixed_step_integration(input_state, times):
         n_points = times.shape[0]
@@ -20,11 +18,7 @@ def generate_fixed_step_integrator(taylor_coeff_func,
     return fixed_step_integration
 
 
-def generate_dense_integrator(taylor_coeff_func,
-                              state_dim,
-                              extra_dim,
-                              step,
-                              order=30):
+def generate_dense_integrator(taylor_coeff_func, state_dim, extra_dim, step, order=30):
     @njit
     def dense_integration(input_state, times, init_t0=None):
         """

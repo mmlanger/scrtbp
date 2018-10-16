@@ -7,10 +7,8 @@ class InvalidBracketsException(Exception):
 
 
 bracket_spec = dict(
-    left_x=nb.float64,
-    left_fx=nb.float64,
-    right_x=nb.float64,
-    right_fx=nb.float64)
+    left_x=nb.float64, left_fx=nb.float64, right_x=nb.float64, right_fx=nb.float64
+)
 
 
 @nb.jitclass(bracket_spec)
@@ -27,8 +25,10 @@ class Brackets:
             self.right_x = x2
             self.right_fx = f2
         elif f1 * f2 > 0.0:
-            msg = ("Interval doesn't contain a root!"
-                   "I.e. f(a) < 0 < f(b) or f(a) > 0 > f(b)")
+            msg = (
+                "Interval doesn't contain a root!"
+                "I.e. f(a) < 0 < f(b) or f(a) > 0 > f(b)"
+            )
             raise InvalidBracketsException(msg)
         else:
             if x1 <= x2:
@@ -114,8 +114,7 @@ def bracket_iteration(func_adapter, brackets):
         phi2 = 1.0 - phi
 
         if phi * phi < eta and 1.0 - eta > phi2 * phi2:
-            x = x1 * (num1 / denom1) + x2 * (num2 / denom2) + x3 * (
-                num3 / denom3)
+            x = x1 * (num1 / denom1) + x2 * (num2 / denom2) + x3 * (num3 / denom3)
 
             if brackets.is_inside(x):
                 brackets.update(x, func_adapter.eval(x))
@@ -133,8 +132,7 @@ def bracket_iteration(func_adapter, brackets):
     # ridder failed, try regula falsi
     denom = brackets.right_fx - brackets.left_fx
     if denom != 0.0:
-        num = (brackets.left_x * brackets.right_fx -
-               brackets.right_x * brackets.left_fx)
+        num = brackets.left_x * brackets.right_fx - brackets.right_x * brackets.left_fx
         x = num / denom
         if brackets.is_inside(x):
             brackets.update(x, func_adapter.eval(x))

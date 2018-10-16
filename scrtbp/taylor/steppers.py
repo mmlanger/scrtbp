@@ -11,7 +11,8 @@ def generate_fixed_stepper(TaylorExpansionClass):
         step=nb.float64,
         step_num=nb.int64,
         t0=nb.float64,
-        t=nb.float64)
+        t=nb.float64,
+    )
 
     @nb.jitclass(fixed_stepper_spec)
     class FixedStepper:
@@ -43,7 +44,8 @@ def generate_step_limter_proxy(StepperClass):
         stepper=StepperClass.class_type.instance_type,
         counter=nb.int64,
         event_limit=nb.int64,
-        step_limit=nb.int64)
+        step_limit=nb.int64,
+    )
 
     @nb.jitclass(limiter_proxy_spec)
     class StepLimiterProxy:

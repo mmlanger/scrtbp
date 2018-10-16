@@ -15,6 +15,7 @@ def generate_event_observer(StepperClass, FuncAdapterClass, one_way_mode=True):
         # only - to + roots are detected
         def py_root_condition(fa, fb):
             return fa < 0.0 and 0.0 < fb
+
     else:
         # all sign crossings are detected as roots
         def py_root_condition(fa, fb):
@@ -24,7 +25,8 @@ def generate_event_observer(StepperClass, FuncAdapterClass, one_way_mode=True):
 
     event_observer_spec = dict(
         stepper=StepperClass.class_type.instance_type,
-        func=FuncAdapterClass.class_type.instance_type)
+        func=FuncAdapterClass.class_type.instance_type,
+    )
 
     @nb.jitclass(event_observer_spec)
     class EventObserver:
@@ -77,19 +79,21 @@ def generate_event_observer(StepperClass, FuncAdapterClass, one_way_mode=True):
     return EventObserver
 
 
-def generate_event_solver(taylor_coeff_func,
-                          poincare_char_func,
-                          state_dim,
-                          extra_dim,
-                          step=0.01,
-                          order=30,
-                          max_event_steps=1000000,
-                          max_steps=1000000000,
-                          one_way_mode=True):
+def generate_event_solver(
+    taylor_coeff_func,
+    poincare_char_func,
+    state_dim,
+    extra_dim,
+    step=0.01,
+    order=30,
+    max_event_steps=1000000,
+    max_steps=1000000000,
+    one_way_mode=True,
+):
     TaylorExpansion = expansion.generate_taylor_expansion(
-        taylor_coeff_func, state_dim, extra_dim)
-    FuncAdapter = expansion.generate_func_adapter(TaylorExpansion,
-                                                  poincare_char_func)
+        taylor_coeff_func, state_dim, extra_dim
+    )
+    FuncAdapter = expansion.generate_func_adapter(TaylorExpansion, poincare_char_func)
     Stepper = steppers.generate_fixed_stepper(TaylorExpansion)
     StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
     EventObserver = generate_event_observer(Stepper, FuncAdapter, one_way_mode)
