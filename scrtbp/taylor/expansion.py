@@ -66,7 +66,7 @@ def CompTaylorTangent(poly_coeffs, x):
     return s + c
 
 
-@nb.njit(nopython=True)
+@nb.njit
 def sum_taylor_series(coeffs, delta_t, output):
     state_dim = coeffs.shape[0]
 
@@ -100,16 +100,14 @@ class SeriesAdapter:
             output[k] = CompTaylorTangent(self.coeffs[k], delta_t)
 
 
-def generate_taylor_expansion(py_coeff_func, state_dim, extra_dim):
+def generate_taylor_expansion(taylor_coeff_func, state_dim, extra_dim):
     taylor_adapter_spec = dict(
-        order=nb.int32,
+        order=nb.int64,
         state=nb.float64[:],
         extra_coeffs=nb.float64[:, :],
         coeffs=nb.float64[:, :],
         series=SeriesAdapter.class_type.instance_type,
     )
-
-    taylor_coeff_func = nb.njit(py_coeff_func)
 
     @nb.jitclass(taylor_adapter_spec)
     class TaylorExpansion:
@@ -122,6 +120,10 @@ def generate_taylor_expansion(py_coeff_func, state_dim, extra_dim):
             self.extra_coeffs = np.empty((extra_dim, self.order))
             self.coeffs = np.empty((state_dim, self.order + 1))
             self.series = SeriesAdapter(self.coeffs)
+
+        @property
+        def state_dim(self):
+            return self.series.state_dim
 
         def expand(self, state, order):
             self.order = order
@@ -145,22 +147,22 @@ def generate_taylor_expansion(py_coeff_func, state_dim, extra_dim):
     return TaylorExpansion
 
 
-def generate_func_adapter(TaylorExpansionClass, py_func):
+def generate_func_adapter(py_func):
     func = nb.njit(py_func)
 
     adapter_spec = dict(
+        series=SeriesAdapter.class_type.instance_type,
         state_cache=nb.float64[:],
-        expansion=TaylorExpansionClass.class_type.instance_type,
     )
 
     @nb.jitclass(adapter_spec)
     class FuncAdapter:
-        def __init__(self, expansion):
-            self.expansion = expansion
-            self.state_cache = np.empty(expansion.state_dim)
+        def __init__(self, series):
+            self.series = series
+            self.state_cache = np.zeros(series.state_dim)
 
         def eval(self, delta_t):
-            self.expansion.eval(delta_t, self.state_cache)
+            self.series.eval(delta_t, self.state_cache)
             return func(self.state_cache)
 
         def eval_from_state(self, state):

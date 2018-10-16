@@ -7,17 +7,18 @@ class MaxStepsExceededException(Exception):
 
 def generate_fixed_stepper(TaylorExpansionClass):
     fixed_stepper_spec = dict(
-        taylor=TaylorExpansionClass.class_type.instance_type,
+        expansion=TaylorExpansionClass.class_type.instance_type,
         step=nb.float64,
         step_num=nb.int64,
         t0=nb.float64,
         t=nb.float64,
+        order=nb.int64,
     )
 
     @nb.jitclass(fixed_stepper_spec)
     class FixedStepper:
-        def __init__(self, state_init, t_init, step):
-            self.taylor = TaylorExpansionClass(state_init)
+        def __init__(self, init_cond, t_init, step, order):
+            self.expansion = TaylorExpansionClass(init_cond, order)
 
             self.step = step
             self.step_num = 0
@@ -26,7 +27,7 @@ def generate_fixed_stepper(TaylorExpansionClass):
             self.t = t_init
 
         def advance(self):
-            self.taylor.advance(self.step)
+            self.expansion.advance(self.step)
             self.step_num += 1
 
         def valid(self):

@@ -10,7 +10,7 @@ class NoEventException(Exception):
     pass
 
 
-def generate_event_observer(StepperClass, FuncAdapterClass, one_way_mode=True):
+def generate_event_observer(StepperClass, FuncAdapter, one_way_mode=True):
     if one_way_mode:
         # only - to + roots are detected
         def py_root_condition(fa, fb):
@@ -25,20 +25,24 @@ def generate_event_observer(StepperClass, FuncAdapterClass, one_way_mode=True):
 
     event_observer_spec = dict(
         stepper=StepperClass.class_type.instance_type,
-        func=FuncAdapterClass.class_type.instance_type,
+        func=FuncAdapter.class_type.instance_type,
+        t=nb.float64,
+        f=nb.float64,
+        next_t=nb.float64,
+        next_f=nb.float64,
     )
 
     @nb.jitclass(event_observer_spec)
     class EventObserver:
         def __init__(self, stepper):
             self.stepper = stepper
-            self.func = FuncAdapterClass(stepper.taylor.series)
+            self.func = FuncAdapter(stepper.expansion.series)
 
             self.update()
 
         def update(self):
             self.t = self.stepper.t
-            self.f = self.func.eval_from_state(self.stepper.state)
+            self.f = self.func.eval_from_state(self.stepper.expansion.state)
             self.next_t = self.stepper.next_t
             self.next_f = self.func.eval(self.stepper.step)
 
@@ -69,11 +73,11 @@ def generate_event_observer(StepperClass, FuncAdapterClass, one_way_mode=True):
 
         def extract_event(self, output):
             if self.f == 0.0:
-                output = self.stepper.taylor.state
+                output = self.stepper.expansion.state
                 return self.stepper.t
             else:
                 root_step = self.resolve_event()
-                self.stepper.taylor.eval(root_step, output)
+                self.stepper.expansion.eval(root_step, output)
                 return self.stepper.t + root_step
 
     return EventObserver
@@ -81,9 +85,9 @@ def generate_event_observer(StepperClass, FuncAdapterClass, one_way_mode=True):
 
 def generate_event_solver(
     taylor_coeff_func,
-    poincare_char_func,
     state_dim,
     extra_dim,
+    event_func,
     step=0.01,
     order=30,
     max_event_steps=1000000,
@@ -93,7 +97,7 @@ def generate_event_solver(
     TaylorExpansion = expansion.generate_taylor_expansion(
         taylor_coeff_func, state_dim, extra_dim
     )
-    FuncAdapter = expansion.generate_func_adapter(TaylorExpansion, poincare_char_func)
+    FuncAdapter = expansion.generate_func_adapter(event_func)
     Stepper = steppers.generate_fixed_stepper(TaylorExpansion)
     StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
     EventObserver = generate_event_observer(Stepper, FuncAdapter, one_way_mode)
@@ -103,13 +107,14 @@ def generate_event_solver(
         points = np.empty((n_points, state_dim))
         times = np.empty(n_points)
 
-        stepper = Stepper(input_state, t0, step)
+        stepper = Stepper(input_state, t0, step, order)
         observer = EventObserver(stepper)
         limiter = StepLimiterProxy(stepper, max_event_steps, max_steps)
 
         i = 0
         while limiter.valid():
             if observer.event_detected():
+                print(observer.resolve_event())
                 i += 1
                 times[i] = observer.extract_event(points[i])
                 if (i + 1) < n_points:
