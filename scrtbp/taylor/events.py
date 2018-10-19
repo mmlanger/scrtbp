@@ -74,11 +74,11 @@ def generate_event_observer(StepperClass, FuncAdapter, one_way_mode=True):
         def extract_event(self, output):
             if self.f == 0.0:
                 output = self.stepper.expansion.state
-                return self.stepper.t
+                return self.t
             else:
                 root_step = self.resolve_event()
                 self.stepper.expansion.eval(root_step, output)
-                return self.stepper.t + root_step
+                return self.t + root_step
 
     return EventObserver
 
@@ -104,7 +104,7 @@ def generate_event_solver(
 
     @nb.njit
     def solve_points(input_state, n_points, t0=0.0):
-        points = np.empty((n_points, state_dim))
+        points = np.zeros((n_points, state_dim))
         times = np.empty(n_points)
 
         stepper = Stepper(input_state, t0, step, order)
@@ -114,10 +114,9 @@ def generate_event_solver(
         i = 0
         while limiter.valid():
             if observer.event_detected():
-                print(observer.resolve_event())
-                i += 1
                 times[i] = observer.extract_event(points[i])
-                if (i + 1) < n_points:
+                i += 1
+                if i < n_points:
                     limiter.reset_constraint()
                 else:
                     break

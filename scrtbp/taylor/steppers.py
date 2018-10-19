@@ -28,6 +28,7 @@ def generate_fixed_stepper(TaylorExpansionClass):
 
         def advance(self):
             self.expansion.advance(self.step)
+            self.t = self.next_t
             self.step_num += 1
 
         def valid(self):

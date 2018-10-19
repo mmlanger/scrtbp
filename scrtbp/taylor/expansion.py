@@ -115,6 +115,7 @@ def generate_taylor_expansion(taylor_coeff_func, state_dim, extra_dim):
             self.order = order
             self.state = state
             self.init_expansion()
+            self.compute()
 
         def init_expansion(self):
             self.extra_coeffs = np.empty((extra_dim, self.order))
