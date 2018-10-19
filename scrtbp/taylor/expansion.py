@@ -152,8 +152,7 @@ def generate_func_adapter(py_func):
     func = nb.njit(py_func)
 
     adapter_spec = dict(
-        series=SeriesAdapter.class_type.instance_type,
-        state_cache=nb.float64[:],
+        series=SeriesAdapter.class_type.instance_type, state_cache=nb.float64[:]
     )
 
     @nb.jitclass(adapter_spec)

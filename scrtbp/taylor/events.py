@@ -104,7 +104,7 @@ def generate_event_solver(
 
     @nb.njit
     def solve_points(input_state, n_points, t0=0.0):
-        points = np.zeros((n_points, state_dim))
+        points = np.empty((n_points, state_dim))
         times = np.empty(n_points)
 
         stepper = Stepper(input_state, t0, step, order)

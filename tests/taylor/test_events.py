@@ -45,6 +45,3 @@ def test_poincare_periodic_orbit():
     assert vector_isclose(points[0], points[2], rel_tol, abs_tol)
 
     assert math.isclose(period, t[2] - t[1], rel_tol=rel_tol, abs_tol=abs_tol)
-
-
-test_poincare_periodic_orbit()
