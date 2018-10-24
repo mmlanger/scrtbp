@@ -1,9 +1,7 @@
 import numpy as np
 import numba as nb
 
-
-class InvalidBracketsException(Exception):
-    pass
+from scrtbp.exceptions import InvalidBrackets
 
 
 bracket_spec = dict(
@@ -29,7 +27,7 @@ class Brackets:
                 "Interval doesn't contain a root!"
                 "I.e. f(a) < 0 < f(b) or f(a) > 0 > f(b)"
             )
-            raise InvalidBracketsException(msg)
+            raise InvalidBrackets(msg)
         else:
             if x1 <= x2:
                 self.left_x = x1
@@ -75,7 +73,7 @@ class Brackets:
                 self.right_fx = fx
             else:
                 msg = "Inconsistent bracket state!"
-                raise InvalidBracketsException(msg)
+                raise InvalidBrackets(msg)
 
 
 @nb.njit

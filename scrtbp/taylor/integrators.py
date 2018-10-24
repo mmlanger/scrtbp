@@ -1,6 +1,7 @@
 import numpy as np
 import numba as nb
 
+import scrtbp.exceptions as exceptions
 from scrtbp.taylor import expansion
 from scrtbp.taylor import steppers
 
@@ -53,7 +54,7 @@ def generate_dense_integrator(
         limiter = StepLimiterProxy(stepper, max_event_steps, max_steps)
 
         if times[0] < init_t0:
-            return ValueError("First time smaller than init_t0!")
+            raise ValueError("First time smaller than init_t0!")
 
         i = 0
         while limiter.valid():
@@ -69,13 +70,10 @@ def generate_dense_integrator(
                 if i < n_points:
                     limiter.reset_constraint()
                 else:
-                    break
-
-            if not i < n_points:
-                break
+                    return points
 
             limiter.advance()
 
-        return points
+        raise exceptions.MaxStepsExceeded
 
     return dense_integration

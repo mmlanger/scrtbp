@@ -104,9 +104,9 @@ def generate_taylor_expansion(taylor_coeff_func, state_dim, extra_dim):
     taylor_adapter_spec = dict(
         order=nb.int64,
         state=nb.float64[:],
-        extra_coeffs=nb.float64[:, :],
         coeffs=nb.float64[:, :],
         series=SeriesAdapter.class_type.instance_type,
+        __extra_coeffs=nb.float64[:, :],
     )
 
     @nb.jitclass(taylor_adapter_spec)
@@ -118,13 +118,17 @@ def generate_taylor_expansion(taylor_coeff_func, state_dim, extra_dim):
             self.compute()
 
         def init_expansion(self):
-            self.extra_coeffs = np.empty((extra_dim, self.order))
             self.coeffs = np.empty((state_dim, self.order + 1))
             self.series = SeriesAdapter(self.coeffs)
+            self.__extra_coeffs = np.empty((extra_dim, self.order))
 
         @property
         def state_dim(self):
             return self.series.state_dim
+
+        def set_state(self, state):
+            self.state = state
+            self.compute()
 
         def expand(self, state, order):
             self.order = order
@@ -137,7 +141,10 @@ def generate_taylor_expansion(taylor_coeff_func, state_dim, extra_dim):
             self.compute()
 
         def compute(self):
-            taylor_coeff_func(self.state, self.coeffs, self.extra_coeffs)
+            taylor_coeff_func(self.state, self.coeffs, self.__extra_coeffs)
+
+        def compute_coeffs(self, state, coeffs):
+            taylor_coeff_func(state, coeffs, self.__extra_coeffs)
 
         def eval(self, delta_t, output):
             self.series.eval(delta_t, output)

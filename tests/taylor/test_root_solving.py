@@ -1,6 +1,7 @@
 import math
 import numpy as np
 
+from scrtbp.exceptions import InvalidBrackets
 from scrtbp.util import root
 
 
@@ -39,7 +40,7 @@ def test_func_collection():
 def test_invalid_brackets():
     try:
         root.solve_py_root(lambda x: x ** 2, 0.1, 1.5)
-    except root.InvalidBracketsException:
+    except InvalidBrackets:
         assert True
     except Exception:
         assert False
