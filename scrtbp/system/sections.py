@@ -13,7 +13,30 @@ def generate_poincare_tools(mu, Cj, tolerance=1e-15):
         y = state[1]
         return y - sqrt_3 * (x + mu)
 
-    def to_phase_space(phase_space_coord, poincare_coord):
+    def to_poincare(phase_space_coord):
+        x = phase_space_coord[0]
+        y = phase_space_coord[1]
+        z = phase_space_coord[2]
+        px = phase_space_coord[3]
+        py = phase_space_coord[4]
+        pz = phase_space_coord[5]
+
+        sqr_3 = np.sqrt(3)
+
+        if not abs(y - sqr_3 * (x + mu)) <= tolerance:
+            print(
+                "CAUTION: Coordinates ",
+                phase_space_coord,
+                " not in Poincare section. S = ",
+                y - sqr_3 * (x + mu),
+            )
+
+        rho = 2 * (x + mu)
+        prho = 0.5 * (px + sqr_3 * py)
+
+        return np.array([rho, prho, z, pz])
+
+    def to_phase_space(poincare_coord):
         rho = poincare_coord[0]
         prho = poincare_coord[1]
         z = poincare_coord[2]
@@ -38,11 +61,8 @@ def generate_poincare_tools(mu, Cj, tolerance=1e-15):
         )
 
         if A < 0:
-            print(
-                "A = {0} smaller 0; initial state {1} invalid for Cj = {2}".format(
-                    A, poincare_coord, Cj
-                )
-            )
+            msg = "A = {} smaller 0; initial state {} invalid for Cj = {}"
+            print(msg.format(A, poincare_coord, Cj))
             return
 
         # px_plus = prho / 2 - np.sqrt(3) / 4 * x - 3 / 4 * y + np.sqrt(
@@ -66,46 +86,10 @@ def generate_poincare_tools(mu, Cj, tolerance=1e-15):
         #    px = px_plus
         #    py = py_plus
         else:
-            msg = "jacobi does not match Cj; " "initial state {0} invalid for Cj = {1}"
+            msg = "jacobi does not match Cj; " "initial state {} invalid for Cj = {}"
             print(msg.format(poincare_coord, Cj))
             return
 
-        phase_space_coord[0] = x
-        phase_space_coord[1] = y
-        phase_space_coord[2] = z
-        phase_space_coord[3] = px
-        phase_space_coord[4] = py
-        phase_space_coord[5] = pz
+        return np.array([x, y, z, px, py, pz])
 
-        return phase_space_coord
-
-    def to_poincare(phase_space_coord, poincare_coord):
-
-        x = phase_space_coord[0]
-        y = phase_space_coord[1]
-        z = phase_space_coord[2]
-        px = phase_space_coord[3]
-        py = phase_space_coord[4]
-        pz = phase_space_coord[5]
-
-        sqr_3 = np.sqrt(3)
-
-        if not abs(y - sqr_3 * (x + mu)) <= tolerance:
-            print(
-                "CAUTION: Coordinates ",
-                phase_space_coord,
-                " not in Poincare section. S = ",
-                y - sqr_3 * (x + mu),
-            )
-
-        rho = 2 * (x + mu)
-        prho = 0.5 * (px + sqr_3 * py)
-
-        poincare_coord[0] = rho
-        poincare_coord[1] = prho
-        poincare_coord[2] = z
-        poincare_coord[3] = pz
-
-        return poincare_coord
-
-    return char_func, to_phase_space, to_poincare
+    return char_func, to_poincare, to_phase_space
