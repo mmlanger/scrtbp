@@ -5,7 +5,10 @@ import scrtbp.exceptions as exceptions
 
 
 def generate_poinare_map(solve_events, transform_reduced, transform_full):
-    @nb.jit
+    transform_full = nb.jit(transform_full, forceobj=True)
+    transform_reduced = nb.jit(transform_reduced, forceobj=True)
+
+    @nb.jit(forceobj=True)
     def poincare_map(point, n_iter):
         state = transform_full(point)
         states, times = solve_events(state, n_iter + 1)
