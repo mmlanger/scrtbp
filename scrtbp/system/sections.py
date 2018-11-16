@@ -1,94 +1,69 @@
 import numpy as np
 
 from . import tools
+from scrtbp.exceptions import TransformationNotDefined
 
 
-def generate_poincare_tools(mu, Cj, tolerance=1e-15):
-    _, _, jacobi = tools.generate_tools(mu)
+def generate_poincare_tools(mu, Cj):
 
     sqrt_3 = np.sqrt(3.0)
 
     def char_func(state):
+        """
+        characteristic function of the Poincare section
+        """
         x = state[0]
         y = state[1]
         return y - sqrt_3 * (x + mu)
 
     def to_poincare(phase_space_coord):
+        """
+        transformation from full to reduced phase space
+        """
         x = phase_space_coord[0]
-        y = phase_space_coord[1]
         z = phase_space_coord[2]
         px = phase_space_coord[3]
         py = phase_space_coord[4]
         pz = phase_space_coord[5]
 
-        sqr_3 = np.sqrt(3)
-
-        if not abs(y - sqr_3 * (x + mu)) <= tolerance:
-            print(
-                "CAUTION: Coordinates ",
-                phase_space_coord,
-                " not in Poincare section. S = ",
-                y - sqr_3 * (x + mu),
-            )
-
         rho = 2 * (x + mu)
-        prho = 0.5 * (px + sqr_3 * py)
+        prho = 0.5 * (px + sqrt_3 * py)
 
         return np.array([rho, prho, z, pz])
 
     def to_phase_space(poincare_coord):
+        """
+        transformation from reduced to full phase space
+        """
         rho = poincare_coord[0]
         prho = poincare_coord[1]
         z = poincare_coord[2]
         pz = poincare_coord[3]
 
         x = 0.5 * rho - mu
-        y = np.sqrt(3) / 2 * rho
+        y = sqrt_3 / 2 * rho
 
-        V = -mu / np.sqrt((mu + x - 1) ** 2 + y ** 2 + z ** 2) - (1 - mu) / np.sqrt(
-            (mu + x) ** 2 + y ** 2 + z ** 2
-        )
+        radicand_1 = (mu + x - 1) ** 2 + y ** 2 + z ** 2
+        radicand_2 = (mu + x) ** 2 + y ** 2 + z ** 2
+
+        potential = -mu / np.sqrt(radicand_1) - (1 - mu) / np.sqrt(radicand_2)
         A = (
             -Cj
-            - 2 * V
+            - 2 * potential
             - prho ** 2
-            + np.sqrt(3) * prho * x
+            + sqrt_3 * prho * x
             - prho * y
             - pz ** 2
             + 0.25 * x ** 2
-            + np.sqrt(3) / 2 * x * y
-            + 3 / 4 * y ** 2
+            + sqrt_3 / 2.0 * x * y
+            + 3.0 / 4.0 * y ** 2
         )
-
         if A < 0:
-            msg = "A = {} smaller 0; initial state {} invalid for Cj = {}"
-            print(msg.format(A, poincare_coord, Cj))
-            return
+            msg = "A = {} smaller 0; state {} invalid for Cj = {}"
+            raise TransformationNotDefined(msg.format(A, poincare_coord, Cj))
 
-        # px_plus = prho / 2 - np.sqrt(3) / 4 * x - 3 / 4 * y + np.sqrt(
-        #    3) / 2 * np.sqrt(A)
-        px_minus = (
-            prho / 2 - np.sqrt(3) / 4 * x - 3 / 4 * y - np.sqrt(3) / 2 * np.sqrt(A)
-        )
-
-        # py_plus = 1 / np.sqrt(3) * (2 * prho - px_plus)
-        py_minus = 1 / np.sqrt(3) * (2 * prho - px_minus)
-
-        # Cj_plus = jacobi(([x, y, z, px_plus, py_plus, pz]))
-        Cj_minus = jacobi(([x, y, z, px_minus, py_minus, pz]))
-
-        if abs(Cj_minus - Cj) <= tolerance:
-            # print("Chose minus")
-            px = px_minus
-            py = py_minus
-        # elif abs(Cj_plus - Cj ) <= tolerance:
-        #    print("Chose plus")
-        #    px = px_plus
-        #    py = py_plus
-        else:
-            msg = "jacobi does not match Cj; " "initial state {} invalid for Cj = {}"
-            print(msg.format(poincare_coord, Cj))
-            return
+        px = prho / 2.0 - sqrt_3 / 4.0 * x - 3.0 / 4.0 * y - sqrt_3 / 2.0 * np.sqrt(A)
+        py = 1.0 / sqrt_3 * (2.0 * prho - px)
 
         return np.array([x, y, z, px, py, pz])
 

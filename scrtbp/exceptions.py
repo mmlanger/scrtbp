@@ -8,3 +8,7 @@ class DefectControlFailure(Exception):
 
 class InvalidBrackets(Exception):
     pass
+
+
+class TransformationNotDefined(Exception):
+    pass
