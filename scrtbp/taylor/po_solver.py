@@ -5,6 +5,7 @@ import scrtbp.exceptions as exceptions
 
 
 def generate_poinare_map(solve_events, transform_reduced, transform_full):
+    @nb.jit
     def poincare_map(point, n_iter):
         state = transform_full(point)
         states, times = solve_events(state, n_iter + 1)
@@ -37,7 +38,7 @@ class DirmIterator:
 
     def iterate(self, tau=0.1):
         self.prev_guess = self.guess.copy()
-        iterated_guess, return_time = self.poincare_map(self.guess, self.order + 1)
+        iterated_guess, return_time = self.poincare_map(self.guess, self.order)
 
         if self.refl_perm_matrix:
             self.guess += tau * self.refl_perm_matrix @ (iterated_guess - self.guess)
@@ -46,3 +47,32 @@ class DirmIterator:
 
         self.return_time = return_time
         self.distance = np.linalg.norm(self.guess - self.prev_guess)
+
+
+def solve_periodic_orbit(
+    poincare_map,
+    init_guess,
+    tau=0.1,
+    dirm_iter=1000,
+    refine_iter=50,
+    order=1,
+    refl_perm_matrix=None,
+    verbose=False,
+):
+    dirm_solver = DirmIterator(poincare_map, init_guess)
+    msg = "iteration {}: dist {:.15e} and period {}"
+
+    for i in range(dirm_iter):
+        dirm_solver.iterate(tau)
+        if verbose:
+            if i % 10 == 0:
+                print(msg.format(i, dirm_solver.distance, dirm_solver.return_time))
+
+    refined_tau = 0.1 * tau
+    for _ in range(refine_iter):
+        dirm_solver.iterate(refined_tau)
+        if verbose:
+            if i % 10 == 0:
+                print(msg.format(i, dirm_solver.distance, dirm_solver.return_time))
+
+    return dirm_solver.state, dirm_solver.return_time
