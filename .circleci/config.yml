@@ -11,7 +11,7 @@ jobs:
           command: |
             python -m venv $HOME/venv_circleci
             . $HOME/venv_circleci/bin/activate
-            pip install numpy numba pytest flake8 docutils
+            pip install numpy numba scipy pytest flake8 docutils
       - run:
           name: Check setup.py
           command: |
@@ -47,7 +47,7 @@ jobs:
             ./miniconda.sh -b -p $HOME/miniconda
             . $HOME/miniconda/etc/profile.d/conda.sh
             conda create -n circleci --yes python=$PYTHON_VERSION \
-              numpy numba pytest flake8 docutils
+              numpy scipy numba pytest flake8 docutils
       #- save_cache:
       #    key: conda-v1-{{ checksum "???" }}
       #    paths:

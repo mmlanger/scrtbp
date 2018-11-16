@@ -40,8 +40,7 @@ def generate_event_observer(StepperClass, FuncAdapter, one_way_mode=True):
         def update(self):
             self.t = self.stepper.t
             self.f = self.func.eval_from_state(self.stepper.expansion.state)
-            next_t = self.stepper.next_t
-            self.next_t = next_t
+            self.next_t = self.stepper.next_t
             self.next_f = self.func.eval(self.stepper.step)
 
         def cached_update(self):
