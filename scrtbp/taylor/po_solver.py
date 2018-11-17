@@ -1,8 +1,6 @@
 import numpy as np
 import numba as nb
 
-import scrtbp.exceptions as exceptions
-
 
 def generate_poinare_map(solve_events, transform_reduced, transform_full):
     transform_full = nb.jit(transform_full, forceobj=True)

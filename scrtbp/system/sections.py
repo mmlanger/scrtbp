@@ -1,11 +1,9 @@
 import numpy as np
 
-from . import tools
 from scrtbp.exceptions import TransformationNotDefined
 
 
 def generate_poincare_tools(mu, Cj):
-
     sqrt_3 = np.sqrt(3.0)
 
     def char_func(state):

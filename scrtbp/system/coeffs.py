@@ -81,7 +81,7 @@ def generate_taylor_coeffs(mu):
 
 
 def generate_variational_taylor_coeffs(mu):
-    state_dim = 6
+    state_dim = 12
     extra_dim = 49
 
     gamma1 = mu - 1
@@ -90,7 +90,7 @@ def generate_variational_taylor_coeffs(mu):
     exponent2 = -5 / 2
 
     @njit
-    def taylor_coeff_func(state, var_state, taylor_coeffs, var_coeffs, ext_coeffs):
+    def taylor_coeff_func(state, taylor_coeffs, ext_coeffs):
         # taylor coefficients shorthands
         x = taylor_coeffs[0]
         y = taylor_coeffs[1]
@@ -100,12 +100,12 @@ def generate_variational_taylor_coeffs(mu):
         pz = taylor_coeffs[5]
 
         # taylor variational coefficients shorthands
-        dx = var_coeffs[0]
-        dy = var_coeffs[1]
-        dz = var_coeffs[2]
-        dpx = var_coeffs[3]
-        dpy = var_coeffs[4]
-        dpz = var_coeffs[5]
+        dx = taylor_coeffs[6]
+        dy = taylor_coeffs[7]
+        dz = taylor_coeffs[8]
+        dpx = taylor_coeffs[9]
+        dpy = taylor_coeffs[10]
+        dpz = taylor_coeffs[11]
 
         # auxiliary variable array shorthands
         # for normal DE
@@ -170,12 +170,12 @@ def generate_variational_taylor_coeffs(mu):
         pz[0] = state[5]
 
         # initial condition for variational vectors
-        dx[0] = var_state[0]
-        dy[0] = var_state[1]
-        dz[0] = var_state[2]
-        dpx[0] = var_state[3]
-        dpy[0] = var_state[4]
-        dpz[0] = var_state[5]
+        dx[0] = state[6]
+        dy[0] = state[7]
+        dz[0] = state[8]
+        dpx[0] = state[9]
+        dpy[0] = state[10]
+        dpz[0] = state[11]
 
         # computation of taylor coefficients
         for n in range(taylor_coeffs.shape[1] - 1):
