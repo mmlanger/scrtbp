@@ -11,10 +11,9 @@ def test_ofli_basic():
 
     coeff_func, state_dim, extra_dim = coeffs.generate_taylor_coeffs(mu)
 
-    step = 0.05
     order = 20
     solve = integrators.generate_adaptive_dense_integrator(
-        coeff_func, state_dim, extra_dim, step, order
+        coeff_func, state_dim, extra_dim, order
     )
 
     init_cond = np.array(

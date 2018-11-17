@@ -1,32 +1,31 @@
 import numpy as np
 import numba as nb
 
-from .steppers import generate_adaptive_stepper
+from . import steppers
 
 
 def generate_ofli_proxy(StepperClass):
-    limiter_proxy_spec = dict(
+    ofli_proxy_spec = dict(
         stepper=StepperClass.class_type.instance_type,
-        counter=nb.int64,
-        event_limit=nb.int64,
-        step_limit=nb.int64,
+        ofli=nb.float64,
+        log_magn_sum=nb.float64,
+        state_dim=nb.int64,
     )
 
-    @nb.jitclass(limiter_proxy_spec)
+    # @nb.jitclass(ofli_proxy_spec)
     class OfliProxy:
         def __init__(self, variational_stepper):
             self.stepper = variational_stepper
             self.ofli = 0.0
             self.log_magn_sum = 0.0
-
-            self.variation = None
+            self.state_dim = self.stepper.expansion.state_dim // 2
 
         def compute_ofli(self):
-            # velocity from RHS of ODE system
             expansion = self.stepper.expansion
-            variation = expansion.state[expansion.state_dim :]
-            state_dim = expansion.state_dim // 2
-            f = expansion.series.coeffs[:state_dim, 1]
+            variation = expansion.state[self.state_dim :]
+
+            # velocity from RHS of ODE system
+            f = expansion.series.coeffs[: self.state_dim, 1]
             f_norm = np.linalg.norm(f)
 
             # parallel part of the variation
@@ -56,39 +55,52 @@ def generate_ofli_proxy(StepperClass):
             expansion.compute()
             self.stepper.advance_time()
 
+        @property
+        def t(self):
+            return self.stepper.t
+
         def valid(self):
             return self.stepper.valid()
 
     return OfliProxy
 
 
-def H_grad(mu, state):
-    """
-    calculates normalized gradient of hamiltonian for scrtbp;
-    used for initial var_state in ofli
-    """
-    x = state[0]
-    y = state[1]
-    z = state[2]
-    px = state[3]
-    py = state[4]
-    pz = state[5]
-
-    grad = np.empty(6)
-
-    r1 = np.sqrt((x + mu) * (x + mu) + y * y + z * z)
-    r2 = np.sqrt((x + mu - 1) * (x + mu - 1) + y * y + z * z)
-
-    grad[0] = (
-        -py + (1 - mu) * (x + mu) / (r1 * r1 * r1) + mu * (x + mu - 1) / (r2 * r2 * r2)
+def generate_dense_integrator(
+    taylor_coeff_func,
+    state_dim,
+    extra_dim,
+    max_time,
+    order=20,
+    max_ofli=None,
+    max_event_steps=1000000,
+    max_steps=1000000000,
+):
+    TaylorExpansion = expansion.generate_taylor_expansion(
+        taylor_coeff_func, state_dim, extra_dim
     )
-    grad[1] = px + y * ((1 - mu) / (r1 * r1 * r1) + mu / (r2 * r2 * r2))
-    grad[2] = z * ((1 - mu) / (r1 * r1 * r1) + mu / (r2 * r2 * r2))
-    grad[3] = px + y
-    grad[4] = py - x
-    grad[5] = pz
+    Stepper = steppers.generate_fixed_stepper(TaylorExpansion)
+    OfliProxy = generate_ofli_proxy(Stepper)
+    StepLimiterProxy = steppers.generate_step_limter_proxy(OfliProxy)
 
-    norm = np.linalg.norm(grad)
-    grad = grad / norm
+    if max_ofli:
 
-    return grad
+        def stop_constraint(ofli_proxy):
+            return ofli_proxy.ofli < max_ofli and ofli_proxy.t < max_time
+
+    else:
+
+        def stop_constraint(ofli_proxy):
+            return ofli_proxy.t < max_time
+
+    # @nb.njit
+    def ofli_integration(init_cond, init_t0=0.0):
+        stepper = Stepper(init_cond, init_t0, step, order)
+        ofli_stepper = OfliProxy(stepper)
+        # limiter = StepLimiterProxy(ofli_stepper, max_event_steps, max_steps)
+
+        while stop_constraint(ofli_stepper) and ofli_stepper.valid():
+            ofli_stepper.advance()
+
+        return ofli_stepper.ofli, ofli_stepper.t
+
+    return ofli_integration
