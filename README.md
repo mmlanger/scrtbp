@@ -1,3 +1,5 @@
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+
 # scrtbp
 
 Numerical treatment of the spatial restricted three body problem.

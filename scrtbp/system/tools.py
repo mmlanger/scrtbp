@@ -50,3 +50,35 @@ def generate_tools(mu):
         return -2.0 * energy(state)
 
     return rhs, energy, jacobi
+
+
+def H_grad(mu, state):
+    """
+    calculates normalized gradient of hamiltonian for scrtbp;
+    used for initial var_state in ofli
+    """
+    x = state[0]
+    y = state[1]
+    z = state[2]
+    px = state[3]
+    py = state[4]
+    pz = state[5]
+
+    grad = np.empty(6)
+
+    r1 = np.sqrt((x + mu) * (x + mu) + y * y + z * z)
+    r2 = np.sqrt((x + mu - 1) * (x + mu - 1) + y * y + z * z)
+
+    grad[0] = (
+        -py + (1 - mu) * (x + mu) / (r1 * r1 * r1) + mu * (x + mu - 1) / (r2 * r2 * r2)
+    )
+    grad[1] = px + y * ((1 - mu) / (r1 * r1 * r1) + mu / (r2 * r2 * r2))
+    grad[2] = z * ((1 - mu) / (r1 * r1 * r1) + mu / (r2 * r2 * r2))
+    grad[3] = px + y
+    grad[4] = py - x
+    grad[5] = pz
+
+    norm = np.linalg.norm(grad)
+    grad = grad / norm
+
+    return grad

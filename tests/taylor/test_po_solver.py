@@ -6,10 +6,6 @@ from scrtbp.system import coeffs, sections
 from scrtbp.taylor import events, po_solver
 
 
-def vector_isclose(x1, x2, rel_tol, abs_tol):
-    return math.isclose(np.linalg.norm(x2 - x1), 0.0, rel_tol=rel_tol, abs_tol=abs_tol)
-
-
 def test_adaptive_dirm_solver():
     mu = 0.01215
     jacobi = 2.992
@@ -73,4 +69,4 @@ def test_po_solver_func():
     )
 
     assert math.isclose(period, po_period, rel_tol=5e-15, abs_tol=0.0)
-    assert vector_isclose(state, po_state, rel_tol=0.0, abs_tol=1e-14)
+    assert np.allclose(state, po_state, rtol=0.0, atol=1e-14)

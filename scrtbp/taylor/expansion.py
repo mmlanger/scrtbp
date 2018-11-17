@@ -113,7 +113,7 @@ def generate_taylor_expansion(taylor_coeff_func, state_dim, extra_dim):
     class TaylorExpansion:
         def __init__(self, state, order):
             self.order = order
-            self.state = state
+            self.state = state.copy()
             self.init_expansion()
             self.compute()
 
