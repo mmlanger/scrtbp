@@ -26,9 +26,6 @@ def generate_fixed_stepper(TaylorExpansionClass):
 
         def advance(self):
             self.expansion.advance(self.step)
-            self.advance_time()
-
-        def advance_time(self):
             self.t = self.next_t
             self._step_num += 1
 
@@ -48,7 +45,7 @@ def generate_adaptive_stepper(TaylorExpansionClass):
         rhs_cache=TaylorExpansionClass.class_type.instance_type,
         __step=nb.float64,
         t0=nb.float64,
-        t=nb.float64,
+        __t=nb.float64,
         tol_abs=nb.float64,
         tol_rel=nb.float64,
         safety_fac=nb.float64,
@@ -67,7 +64,7 @@ def generate_adaptive_stepper(TaylorExpansionClass):
             self.__step = 0.0
 
             self.t0 = t_init
-            self.t = t_init
+            self.__t = t_init
 
             self.tol_abs = tol_abs
             self.tol_rel = tol_rel
@@ -110,14 +107,19 @@ def generate_adaptive_stepper(TaylorExpansionClass):
 
         def advance(self):
             self.expansion.advance(self.step)
-            self.advance_time()
-
-        def advance_time(self):
             self.t = self.next_t
-            self.__step = 0.0
 
         def valid(self):
             return True
+
+        @property
+        def t(self):
+            return self.__t
+
+        @t.setter
+        def t(self, value):
+            self.__step = 0.0
+            self.__t = value
 
         @property
         def tol(self):
