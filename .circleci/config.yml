@@ -27,7 +27,7 @@ jobs:
           name: Run linter
           command: |
             . $HOME/venv_circleci/bin/activate
-            flake8  --max-line-length 88 .
+            flake8 --ignore=E203 --max-line-length 88 .
       - store_artifacts:
           path: artifacts
 
@@ -70,7 +70,7 @@ jobs:
           command: |
             . $HOME/miniconda/etc/profile.d/conda.sh
             conda activate circleci
-            flake8  --max-line-length 88 .
+            flake8 --ignore=E203 --max-line-length 88 .
       - store_artifacts:
           path: artifacts
           

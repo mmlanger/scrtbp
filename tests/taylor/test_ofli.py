@@ -1,8 +1,6 @@
-import math
-
 import numpy as np
 
-from scrtbp.system import coeffs, sections
+from scrtbp.system import coeffs
 from scrtbp.taylor import indicators
 
 
