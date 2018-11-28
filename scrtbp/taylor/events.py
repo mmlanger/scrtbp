@@ -2,6 +2,7 @@ import numpy as np
 import numba as nb
 
 import scrtbp.exceptions as exceptions
+
 from scrtbp.taylor import expansion
 from scrtbp.taylor import steppers
 from scrtbp.util import root

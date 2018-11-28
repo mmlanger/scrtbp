@@ -1,6 +1,8 @@
 import numpy as np
 import numba as nb
 
+from scrtbp.util import root
+
 from . import steppers
 from . import expansion
 
@@ -104,14 +106,48 @@ def generate_ofli_integrator(
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
     OfliProxy = generate_ofli_proxy(Stepper)
 
-    if max_ofli:
-        raise NotImplementedError
+    adapter_spec = dict(ofli_stepper=OfliProxy.class_type.instance_type)
 
-        # @nb.njit
-        # def stop_constraint(ofli_proxy):
-        #     return ofli_proxy.ofli >= max_ofli
+    @nb.jitclass(adapter_spec)
+    class OfliFuncAdapter:
+        def __init__(self, ofli_stepper):
+            self.ofli_stepper = ofli_stepper
+
+        def eval(self, delta_t):
+            return self.ofli_stepper.compute_ofli(delta_t) - max_ofli
+
+    if max_ofli:
+
+        @nb.njit
+        def ofli_integration(init_cond, init_t0=0.0):
+            stepper = Stepper(init_cond, init_t0, order, tol_abs, tol_rel)
+            ofli_stepper = OfliProxy(stepper)
+            ofli_val = 0.0
+            ofli_time = 0.0
+
+            while ofli_stepper.valid():
+                next_ofli = ofli_stepper.compute_ofli(ofli_stepper.stepper.step)
+
+                if next_ofli > max_ofli:
+                    func_adapter = OfliFuncAdapter(ofli_stepper)
+                    target_step = root.solve_root(
+                        func_adapter, 0.0, ofli_stepper.next_t - ofli_stepper.t
+                    )
+                    ofli_val = ofli_stepper.compute_ofli(target_step)
+                    ofli_time = ofli_stepper.t + target_step
+                    break
+                elif ofli_stepper.next_t > max_time:
+                    target_step = max_time - ofli_stepper.t
+                    ofli_val = ofli_stepper.compute_ofli(target_step)
+                    ofli_time = ofli_stepper.t + target_step
+                    break
+                else:
+                    ofli_stepper.advance()
+
+            return ofli_val, ofli_time
 
     else:
+
         @nb.njit
         def ofli_integration(init_cond, init_t0=0.0):
             stepper = Stepper(init_cond, init_t0, order, tol_abs, tol_rel)

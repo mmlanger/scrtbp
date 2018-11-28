@@ -92,8 +92,7 @@ def bracket_iteration(func_adapter, brackets):
     if brackets.contains_exact_root:
         return brackets.best_approx_root
 
-    # try inverse quadratic interpolation (iqi)
-    # (function has to be monotonic)
+    # try inverse quadratic interpolation (function has to be monotonic)
     if (f1 < f2 and f2 < f3) or (f1 > f2 and f2 > f3):
         diff21 = f2 - f1
         diff23 = f2 - f3
@@ -118,7 +117,7 @@ def bracket_iteration(func_adapter, brackets):
                 brackets.update(x, func_adapter.eval(x))
                 return brackets.best_approx_root
 
-    # iqi failed, try ridders method
+    # inverse quadratic interpolation failed, try ridders method
     radicand = f2 * f2 - f1 * f3
     if 0.0 < radicand:
         x = x2 + (x2 - x1) * (np.sign(f1) * f2 / np.sqrt(radicand))
@@ -162,6 +161,12 @@ def solve(func_adapter, brackets):
         bracket_iteration(func_adapter, brackets)
 
     return brackets.best_approx_root
+
+
+@nb.njit
+def solve_root(func_adapter, a, b):
+    brackets = Brackets(a, func_adapter.eval(a), b, func_adapter.eval(b))
+    return solve(func_adapter, brackets)
 
 
 def solve_py_root(py_func, x1, x2):
