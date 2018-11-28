@@ -9,8 +9,8 @@ from scrtbp.taylor import indicators
 def test_ofli_basic():
     mu = 0.01215
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_variational_taylor_coeffs(mu)
-    solve = indicators.generate_ofli_integrator(coeff_func, state_dim, extra_dim, 100.0)
+    taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
+    solve = indicators.generate_ofli_integrator(taylor_params, 100.0)
 
     init_cond = np.array(
         [
@@ -39,9 +39,9 @@ def test_max_ofli_limit():
     max_ofli = 4.0
     max_time = 100.0
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_variational_taylor_coeffs(mu)
+    taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
     solve = indicators.generate_ofli_integrator(
-        coeff_func, state_dim, extra_dim, max_time=max_time, max_ofli=max_ofli
+        taylor_params, max_time=max_time, max_ofli=max_ofli
     )
 
     init_cond = np.array(

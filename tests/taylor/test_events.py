@@ -11,13 +11,13 @@ def test_poincare_periodic_orbit():
     jacobi = 2.992
     period = 21.1810525829419
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_taylor_coeffs(mu)
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
     poincare_func, _, _ = sections.generate_poincare_tools(mu, jacobi)
 
     step = 0.1
     order = 20
     poincare_solve = events.generate_event_solver(
-        coeff_func, state_dim, extra_dim, poincare_func, step, order
+        taylor_params, poincare_func, step, order
     )
 
     init_cond = np.array(
@@ -48,14 +48,14 @@ def test_adaptive_event_solver():
     jacobi = 2.992
     period = 21.1810525829419
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_taylor_coeffs(mu)
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
     poincare_func, _, _ = sections.generate_poincare_tools(mu, jacobi)
 
     order = 20
     eps_abs = 1e-16
     eps_tol = 1e-16
     poincare_solve = events.generate_adaptive_event_solver(
-        coeff_func, state_dim, extra_dim, poincare_func, order, eps_abs, eps_tol
+        taylor_params, poincare_func, order, eps_abs, eps_tol
     )
 
     init_cond = np.array(

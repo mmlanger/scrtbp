@@ -7,15 +7,13 @@ from scrtbp.taylor import integrators
 def test_fixed_stepper():
     mu = 0.01215
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_taylor_coeffs(mu)
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
 
     period = 21.1810525829419
     n_points = 70
     step = period / (n_points - 1)
     order = 20
-    solve = integrators.generate_fixed_step_integrator(
-        coeff_func, state_dim, extra_dim, step, order
-    )
+    solve = integrators.generate_fixed_step_integrator(taylor_params, step, order)
 
     init_cond = np.array(
         [
@@ -35,11 +33,10 @@ def test_fixed_stepper():
 def test_adaptive_dense_integration():
     mu = 0.01215
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_taylor_coeffs(mu)
-
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
     order = 20
     solve = integrators.generate_adaptive_dense_integrator(
-        coeff_func, state_dim, extra_dim, order, tol_abs=1e-16, tol_rel=1e-16
+        taylor_params, order, tol_abs=1e-16, tol_rel=1e-16
     )
 
     init_cond = np.array(

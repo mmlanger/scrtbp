@@ -89,9 +89,7 @@ def generate_ofli_proxy(StepperClass):
 
 
 def generate_ofli_integrator(
-    taylor_coeff_func,
-    state_dim,
-    extra_dim,
+    taylor_params,
     max_time,
     order=20,
     tol_abs=1e-16,
@@ -100,9 +98,7 @@ def generate_ofli_integrator(
     max_event_steps=1000000,
     max_steps=1000000000,
 ):
-    TaylorExpansion = expansion.generate_taylor_expansion(
-        taylor_coeff_func, state_dim, extra_dim
-    )
+    TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
     OfliProxy = generate_ofli_proxy(Stepper)
 

@@ -6,12 +6,10 @@ from scrtbp.taylor import expansion
 from scrtbp.taylor import steppers
 
 
-def generate_fixed_step_integrator(
-    taylor_coeff_func, state_dim, extra_dim, step, order=20
-):
-    TaylorExpansion = expansion.generate_taylor_expansion(
-        taylor_coeff_func, state_dim, extra_dim
-    )
+def generate_fixed_step_integrator(taylor_params, step, order=20):
+    state_dim = taylor_params[1]
+
+    TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     Stepper = steppers.generate_fixed_stepper(TaylorExpansion)
 
     @nb.njit
@@ -31,18 +29,16 @@ def generate_fixed_step_integrator(
 
 
 def generate_adaptive_dense_integrator(
-    taylor_coeff_func,
-    state_dim,
-    extra_dim,
+    taylor_params,
     order=20,
     tol_abs=1e-16,
     tol_rel=1e-16,
     max_event_steps=1000000,
     max_steps=1000000000,
 ):
-    TaylorExpansion = expansion.generate_taylor_expansion(
-        taylor_coeff_func, state_dim, extra_dim
-    )
+    state_dim = taylor_params[1]
+
+    TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
     StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
 

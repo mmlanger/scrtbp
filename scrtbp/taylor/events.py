@@ -3,9 +3,10 @@ import numba as nb
 
 import scrtbp.exceptions as exceptions
 
-from scrtbp.taylor import expansion
-from scrtbp.taylor import steppers
 from scrtbp.util import root
+
+from . import expansion
+from . import steppers
 
 
 def generate_event_observer(StepperClass, FuncAdapter, one_way_mode=True):
@@ -82,9 +83,7 @@ def generate_event_observer(StepperClass, FuncAdapter, one_way_mode=True):
 
 
 def generate_event_solver(
-    taylor_coeff_func,
-    state_dim,
-    extra_dim,
+    taylor_params,
     event_func,
     step=0.01,
     order=20,
@@ -92,9 +91,9 @@ def generate_event_solver(
     max_steps=1000000000,
     one_way_mode=True,
 ):
-    TaylorExpansion = expansion.generate_taylor_expansion(
-        taylor_coeff_func, state_dim, extra_dim
-    )
+    state_dim = taylor_params[1]
+
+    TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     FuncAdapter = expansion.generate_func_adapter(event_func)
     Stepper = steppers.generate_fixed_stepper(TaylorExpansion)
     StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
@@ -128,9 +127,7 @@ def generate_event_solver(
 
 
 def generate_adaptive_event_solver(
-    taylor_coeff_func,
-    state_dim,
-    extra_dim,
+    taylor_params,
     event_func,
     order=20,
     tol_abs=1e-16,
@@ -139,9 +136,9 @@ def generate_adaptive_event_solver(
     max_steps=1000000000,
     one_way_mode=True,
 ):
-    TaylorExpansion = expansion.generate_taylor_expansion(
-        taylor_coeff_func, state_dim, extra_dim
-    )
+    state_dim = taylor_params[1]
+
+    TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     FuncAdapter = expansion.generate_func_adapter(event_func)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
     StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)

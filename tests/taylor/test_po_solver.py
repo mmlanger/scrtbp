@@ -10,14 +10,14 @@ def test_adaptive_dirm_solver():
     mu = 0.01215
     jacobi = 2.992
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_taylor_coeffs(mu)
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
     poincare_func, trans_red, trans_full = sections.generate_poincare_tools(mu, jacobi)
 
     order = 20
     eps_abs = 1e-16
     eps_tol = 1e-16
     solve_events = events.generate_adaptive_event_solver(
-        coeff_func, state_dim, extra_dim, poincare_func, order, eps_abs, eps_tol
+        taylor_params, poincare_func, order, eps_abs, eps_tol
     )
     poincare_map = po_solver.generate_poinare_map(solve_events, trans_red, trans_full)
 
@@ -41,14 +41,14 @@ def test_po_solver_func():
     mu = 0.01215
     jacobi = 2.992
 
-    coeff_func, state_dim, extra_dim = coeffs.generate_taylor_coeffs(mu)
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
     poincare_func, trans_red, trans_full = sections.generate_poincare_tools(mu, jacobi)
 
     order = 20
     eps_abs = 1e-16
     eps_tol = 1e-16
     solve_events = events.generate_adaptive_event_solver(
-        coeff_func, state_dim, extra_dim, poincare_func, order, eps_abs, eps_tol
+        taylor_params, poincare_func, order, eps_abs, eps_tol
     )
     poincare_map = po_solver.generate_poinare_map(solve_events, trans_red, trans_full)
 
