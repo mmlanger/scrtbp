@@ -21,12 +21,26 @@ def generate_ofli_proxy(StepperClass):
             self.log_magn_sum = 0.0
             self.state_dim = self.stepper.expansion.state_dim // 2
 
-        def compute_ofli(self):
+        def compute_ofli(self, step):
             expansion = self.stepper.expansion
-            variation = expansion.state[self.state_dim :]
 
-            # velocity from RHS of ODE system
-            f = expansion.series.coeffs[: self.state_dim, 1]
+            if step == 0.0:
+                state = expansion.state
+
+                # velocity from RHS of ODE system
+                f = expansion.series.coeffs[: self.state_dim, 1]
+                f_norm = np.linalg.norm(f)
+            else:
+                # variation approximation from taylor series
+                state = np.empty_like(expansion.state)
+                expansion.eval(step, state)
+
+                # velocity approximation from taylor series
+                rhs = np.empty_like(expansion.state)
+                expansion.tangent(step, rhs)
+                f = rhs[: self.state_dim]
+
+            variation = state[self.state_dim :]
             f_norm = np.linalg.norm(f)
 
             # parallel part of the variation
@@ -36,7 +50,7 @@ def generate_ofli_proxy(StepperClass):
             var_ort_norm = np.linalg.norm(variation - var_par)
 
             # take account of original variation magnitude for ofli computation
-            self.ofli = max(self.ofli, self.log_magn_sum + np.log(var_ort_norm))
+            return max(self.ofli, self.log_magn_sum + np.log(var_ort_norm))
 
         def advance(self):
             # evaluate next step without computation of taylor coefficients
@@ -52,21 +66,11 @@ def generate_ofli_proxy(StepperClass):
             self.log_magn_sum += np.log(norm)
 
             # update ofli
-            self.compute_ofli()
+            self.ofli = self.compute_ofli(0.0)
 
             # update stepper for correct next step
             expansion.compute()
-            self.stepper.t = self.stepper.next_t
-
-        def force_step(self, step):
-            # evaluate next step without computation of taylor coefficients
-            expansion = self.stepper.expansion
-            expansion.eval(step, expansion.state)
-
-            self.compute_ofli()
-
-            expansion.compute()
-            self.stepper.t += step
+            self.stepper.advance_time()
 
         @property
         def t(self):
@@ -101,29 +105,29 @@ def generate_ofli_integrator(
     OfliProxy = generate_ofli_proxy(Stepper)
 
     if max_ofli:
+        raise NotImplementedError
 
-        @nb.njit
-        def stop_constraint(ofli_proxy):
-            return ofli_proxy.ofli >= max_ofli
+        # @nb.njit
+        # def stop_constraint(ofli_proxy):
+        #     return ofli_proxy.ofli >= max_ofli
 
     else:
-
         @nb.njit
-        def stop_constraint(ofli_proxy):
-            return False
+        def ofli_integration(init_cond, init_t0=0.0):
+            stepper = Stepper(init_cond, init_t0, order, tol_abs, tol_rel)
+            ofli_stepper = OfliProxy(stepper)
+            ofli_val = 0.0
+            ofli_time = 0.0
 
-    @nb.njit
-    def ofli_integration(init_cond, init_t0=0.0):
-        stepper = Stepper(init_cond, init_t0, order, tol_abs, tol_rel)
-        ofli_stepper = OfliProxy(stepper)
+            while ofli_stepper.valid():
+                if ofli_stepper.next_t > max_time:
+                    target_step = max_time - ofli_stepper.t
+                    ofli_time = ofli_stepper.t + target_step
+                    ofli_val = ofli_stepper.compute_ofli(target_step)
+                    break
+                else:
+                    ofli_stepper.advance()
 
-        while not stop_constraint(ofli_stepper) and ofli_stepper.valid():
-            if ofli_stepper.next_t > max_time:
-                ofli_stepper.force_step(max_time - ofli_stepper.t)
-                break
-            else:
-                ofli_stepper.advance()
-
-        return ofli_stepper.ofli, ofli_stepper.t
+            return ofli_val, ofli_time
 
     return ofli_integration
