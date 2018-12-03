@@ -8,10 +8,9 @@ from scrtbp.taylor import pss
 
 def test_pss_orbit():
     mu = 0.01215
-    jacobi = 2.992
 
     taylor_params = coeffs.generate_taylor_coeffs(mu)
-    poincare_func, _, _ = sections.generate_poincare_tools(mu, jacobi)
+    poincare_func = sections.generate_poincare_tools(mu)
 
     def slice_condition(point):
         pz = point[5]
@@ -52,4 +51,3 @@ def test_pss_orbit():
 
     assert np.allclose(points[-1], last_pss_point, rel_tol, abs_tol)
     assert math.isclose(t[-1], last_pss_time, rel_tol=rel_tol, abs_tol=abs_tol)
-

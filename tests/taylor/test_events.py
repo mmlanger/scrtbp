@@ -8,11 +8,10 @@ from scrtbp.taylor import events
 
 def test_poincare_periodic_orbit():
     mu = 0.01215
-    jacobi = 2.992
     period = 21.1810525829419
 
     taylor_params = coeffs.generate_taylor_coeffs(mu)
-    poincare_func, _, _ = sections.generate_poincare_tools(mu, jacobi)
+    poincare_func = sections.generate_poincare_tools(mu)
 
     step = 0.1
     order = 20
@@ -45,11 +44,10 @@ def test_poincare_periodic_orbit():
 
 def test_adaptive_event_solver():
     mu = 0.01215
-    jacobi = 2.992
     period = 21.1810525829419
 
     taylor_params = coeffs.generate_taylor_coeffs(mu)
-    poincare_func, _, _ = sections.generate_poincare_tools(mu, jacobi)
+    poincare_func = sections.generate_poincare_tools(mu)
 
     order = 20
     eps_abs = 1e-16
