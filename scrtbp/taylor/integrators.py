@@ -40,7 +40,7 @@ def generate_adaptive_dense_integrator(
 
     TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
-    StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
+    StepLimiterProxy = steppers.generate_step_limiter_proxy(Stepper)
 
     @nb.njit
     def dense_integration(init_cond, times, init_t0=0.0):

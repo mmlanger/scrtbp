@@ -25,7 +25,7 @@ def generate_adaptive_escape_solver(
     
     FuncAdapter = expansion.generate_func_adapter(py_event_func)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
-    StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
+    StepLimiterProxy = steppers.generate_step_limiter_proxy(Stepper)
     EventObserver = events.generate_event_observer(Stepper, FuncAdapter, one_way_mode)
 
     escape_condition = nb.njit(py_escape_condition)

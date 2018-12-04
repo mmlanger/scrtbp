@@ -96,7 +96,7 @@ def generate_event_solver(
     TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     FuncAdapter = expansion.generate_func_adapter(event_func)
     Stepper = steppers.generate_fixed_stepper(TaylorExpansion)
-    StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
+    StepLimiterProxy = steppers.generate_step_limiter_proxy(Stepper)
     EventObserver = generate_event_observer(Stepper, FuncAdapter, one_way_mode)
 
     @nb.njit
@@ -141,7 +141,7 @@ def generate_adaptive_event_solver(
     TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     FuncAdapter = expansion.generate_func_adapter(event_func)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
-    StepLimiterProxy = steppers.generate_step_limter_proxy(Stepper)
+    StepLimiterProxy = steppers.generate_step_limiter_proxy(Stepper)
     EventObserver = generate_event_observer(Stepper, FuncAdapter, one_way_mode)
 
     @nb.njit

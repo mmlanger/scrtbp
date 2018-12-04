@@ -145,36 +145,39 @@ def generate_adaptive_stepper(TaylorExpansionClass):
     return AdaptiveStepper
 
 
-def generate_step_limter_proxy(StepperClass):
+def generate_step_limiter_proxy(StepperClass):
     limiter_proxy_spec = dict(
         stepper=StepperClass.class_type.instance_type,
         step_counter=nb.int64,
-        event_counter=nb.int64,
-        event_limit=nb.int64,
+        constraint_counter=nb.int64,
+        constraint_limit=nb.int64,
         step_limit=nb.int64,
     )
 
     @nb.jitclass(limiter_proxy_spec)
     class StepLimiterProxy:
-        def __init__(self, stepper, event_limit, step_limit):
+        def __init__(self, stepper, constraint_limit, step_limit):
             self.stepper = stepper
             self.step_counter = 0
-            self.event_counter = 0
-            self.event_limit = event_limit
+            self.constraint_counter = 0
+            self.constraint_limit = constraint_limit
             self.step_limit = step_limit
 
         def reset_constraint(self):
-            self.event_counter = 0
+            self.constraint_counter = 0
 
         def advance(self):
             self.stepper.advance()
             self.step_counter += 1
-            self.event_counter += 1
+            self.constraint_counter += 1
+
+        def constraint_valid(self):
+            return self.constraint_counter < self.constraint_limit
+
+        def steps_valid(self):
+            return self.step_counter < self.step_limit
 
         def valid(self):
-            event_steps_valid = self.event_counter < self.event_limit
-            max_steps_valid = self.step_counter < self.step_limit
-
-            return event_steps_valid and max_steps_valid
+            return self.constraint_valid() and self.steps_valid()
 
     return StepLimiterProxy
