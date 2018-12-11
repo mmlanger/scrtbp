@@ -56,11 +56,11 @@ def solve_periodic_orbit(
     tau=0.1,
     dirm_iter=1000,
     refine_iter=50,
-    order=1,
+    po_order=1,
     refl_perm_matrix=None,
     verbose=False,
 ):
-    dirm_solver = DirmIterator(poincare_map, init_guess)
+    dirm_solver = DirmIterator(poincare_map, init_guess, order=po_order)
     msg = "iteration {}: dist {:.15e} and period {}"
 
     for i in range(dirm_iter):

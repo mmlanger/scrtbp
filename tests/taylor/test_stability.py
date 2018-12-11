@@ -3,14 +3,14 @@ import math
 import numpy as np
 
 from scrtbp.system import coeffs
-from scrtbp.taylor import indicators
+from scrtbp.taylor import stability, integrators
 
 
 def test_ofli_basic():
     mu = 0.01215
 
     taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
-    solve = indicators.generate_ofli_integrator(taylor_params, 100.0)
+    solve = stability.generate_ofli_integrator(taylor_params, 100.0)
 
     init_cond = np.array(
         [
@@ -40,7 +40,7 @@ def test_max_ofli_limit():
     max_time = 100.0
 
     taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
-    solve = indicators.generate_ofli_integrator(
+    solve = stability.generate_ofli_integrator(
         taylor_params, max_time=max_time, max_ofli=max_ofli
     )
 
@@ -64,3 +64,34 @@ def test_max_ofli_limit():
     ofli, time = solve(init_cond)
     assert math.isclose(max_ofli, ofli, rel_tol=1e-15, abs_tol=1e-15)
     assert math.isclose(91.1161972, time, rel_tol=1e-6, abs_tol=1e-6)
+
+
+def test_floquet_multiplier():
+    mu = 0.01215
+
+    taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
+    order = 20
+    solve = integrators.generate_adaptive_dense_integrator(
+        taylor_params, order, tol_abs=1e-16, tol_rel=1e-16
+    )
+
+    init_cond = np.array(
+        [
+            0.44014817654284644,
+            0.78340342194296775,
+            0.0,
+            -0.90541982433807799,
+            0.54041338292490493,
+            0.0,
+        ]
+    )
+    period = 21.181052582941817
+
+    multiplier, _ = stability.compute_floquet_multiplier(solve, init_cond, period)
+    assert np.allclose(abs(multiplier), 1.0, rtol=0.0, atol=1e-10)
+
+    #n = 3  # number of 2*pi shifts in the phase
+    #multiplier = multiplier[multiplier.imag >= 0.0]
+    #freqs = (np.angle(multiplier) + n * 2.0 * np.pi) / period
+
+    #assert np.allclose(abs(multiplier), 1.0, rtol=0.0, atol=1e-10)

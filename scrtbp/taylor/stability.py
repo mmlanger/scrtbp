@@ -163,3 +163,24 @@ def generate_ofli_integrator(
             return ofli_val, ofli_time
 
     return ofli_integration
+
+
+def compute_stability_matrix(variational_integration, po_point, period):
+    state_dim = po_point.size
+
+    stability_matrix = np.eye(state_dim)
+    target_times = np.array([period])
+
+    for i in range(state_dim):
+        init_extended_state = np.append(po_point, stability_matrix[:, i])
+        extended_state = variational_integration(init_extended_state, target_times)[0]
+        stability_matrix[:, i] = extended_state[state_dim:]
+
+    return stability_matrix
+
+
+def compute_floquet_multiplier(variational_integration, po_point, period):
+    stab_mat = compute_stability_matrix(variational_integration, po_point, period)
+    floquet_mutlipliers, floquet_vectors = np.linalg.eig(stab_mat)
+
+    return floquet_mutlipliers, floquet_vectors.T
