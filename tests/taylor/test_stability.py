@@ -90,8 +90,16 @@ def test_floquet_multiplier():
     multiplier, _ = stability.compute_floquet_multiplier(solve, init_cond, period)
     assert np.allclose(abs(multiplier), 1.0, rtol=0.0, atol=1e-10)
 
-    #n = 3  # number of 2*pi shifts in the phase
-    #multiplier = multiplier[multiplier.imag >= 0.0]
-    #freqs = (np.angle(multiplier) + n * 2.0 * np.pi) / period
+    multiplier = multiplier[multiplier.imag >= 0.0]
+    freqs = np.angle(multiplier) / period
+    freqs.sort()
 
-    #assert np.allclose(abs(multiplier), 1.0, rtol=0.0, atol=1e-10)
+    shift_om3 = (2.0 * np.pi) / period
+    om1 = freqs[0] + shift_om3
+    om2 = freqs[1] + 3 * shift_om3
+    om3 = freqs[2] + 3 * shift_om3
+
+    abs_tol = 1e-5
+    assert math.isclose(om1, 0.2966418, rel_tol=0.0, abs_tol=abs_tol)
+    assert math.isclose(om2, 0.9282165, rel_tol=0.0, abs_tol=abs_tol)
+    assert math.isclose(om3, 1.0021599, rel_tol=0.0, abs_tol=abs_tol)
