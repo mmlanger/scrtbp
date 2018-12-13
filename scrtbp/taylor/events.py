@@ -72,7 +72,8 @@ def generate_event_observer(StepperClass, FuncAdapter, one_way_mode=True):
 
         def extract_event(self, output):
             if self.f == 0.0:
-                output = self.stepper.expansion.state
+                for i in range(self.stepper.expansion.state.shape[0]):
+                    output[i] = self.stepper.expansion.state[i]
                 return self.t
             else:
                 root_step = self.resolve_event()

@@ -51,9 +51,9 @@ def test_adaptive_event_solver():
 
     order = 20
     eps_abs = 1e-16
-    eps_tol = 1e-16
+    eps_rel = 1e-16
     poincare_solve = events.generate_adaptive_event_solver(
-        taylor_params, poincare_func, order, eps_abs, eps_tol
+        taylor_params, poincare_func, order, eps_abs, eps_rel
     )
 
     init_cond = np.array(
@@ -77,3 +77,40 @@ def test_adaptive_event_solver():
     assert np.allclose(points[0], points[2], rel_tol, abs_tol)
 
     assert math.isclose(period, t[2] - t[1], rel_tol=rel_tol, abs_tol=abs_tol)
+
+
+def test_adaptive_event_solver2():
+    mu = 0.01215
+    period = 21.070381823537637
+
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
+    poincare_func = sections.generate_poincare_tools(mu)
+
+    order = 20
+    eps_abs = 3e-16
+    eps_rel = 0.0
+    poincare_solve = events.generate_adaptive_event_solver(
+        taylor_params, poincare_func, order, eps_abs, eps_rel
+    )
+
+    init_cond = np.array(
+        [
+            0.48746299023727763,
+            0.86535508321237831,
+            0.0,
+            -0.86638425004587982,
+            0.48805050039733561,
+            0.0,
+        ]
+    )
+
+    points, t = poincare_solve(init_cond, 3)
+
+    rel_tol = 1e-12
+    abs_tol = 1e-12
+
+    assert np.allclose(points[0], points[1], rel_tol, abs_tol)
+    assert np.allclose(points[1], points[2], rel_tol, abs_tol)
+    assert np.allclose(points[0], points[2], rel_tol, abs_tol)
+
+    assert math.isclose(period, t[2] - t[1], rel_tol=0.0, abs_tol=1e-7)
