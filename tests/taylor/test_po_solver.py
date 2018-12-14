@@ -68,5 +68,5 @@ def test_po_solver_func():
         ]
     )
 
-    assert math.isclose(period, po_period, rel_tol=5e-15, abs_tol=0.0)
+    assert math.isclose(period, po_period, rel_tol=0.0, abs_tol=1e-8)
     assert np.allclose(state, po_state, rtol=0.0, atol=1e-14)
