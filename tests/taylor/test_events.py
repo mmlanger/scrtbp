@@ -76,7 +76,7 @@ def test_adaptive_event_solver():
     assert np.allclose(points[1], points[2], rel_tol, abs_tol)
     assert np.allclose(points[0], points[2], rel_tol, abs_tol)
 
-    assert math.isclose(period, t[2] - t[1], rel_tol=rel_tol, abs_tol=abs_tol)
+    assert math.isclose(period, t[2] - t[1], rel_tol=0.0, abs_tol=1e-8)
 
 
 def test_adaptive_event_solver2():
@@ -112,4 +112,4 @@ def test_adaptive_event_solver2():
     assert np.allclose(points[1], points[2], rel_tol, abs_tol)
     assert np.allclose(points[0], points[2], rel_tol, abs_tol)
 
-    assert math.isclose(period, t[2] - t[1], rel_tol=0.0, abs_tol=1e-10)
+    assert math.isclose(period, t[2] - t[1], rel_tol=0.0, abs_tol=1e-8)
