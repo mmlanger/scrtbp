@@ -73,7 +73,7 @@ def generate_adaptive_stepper(TaylorExpansionClass):
             self.tol_rel = tol_rel
             self.safety_fac = 0.9
 
-            self.defect_iters = 5
+            self.defect_iters = 10
             self.defect_tolfac = 10.0
             self.defect_redfac = 0.8
             self.defect_rhs_diff = np.zeros(self.expansion.state_dim)

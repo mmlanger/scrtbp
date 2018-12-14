@@ -55,10 +55,10 @@ def solve_periodic_orbit(
     init_guess,
     tau=0.1,
     n_iter=1000,
+    refine_tau=0.01,
     refine_iter=100,
     po_order=1,
     refl_perm_matrix=None,
-    refined_tau=0.01,
     verbose=False,
 ):
     dirm_solver = DirmIterator(poincare_map, init_guess, order=po_order)
@@ -74,7 +74,7 @@ def solve_periodic_orbit(
         print("refinement loop:")
     
     for i in range(1, refine_iter + 1):
-        dirm_solver.iterate(refined_tau)
+        dirm_solver.iterate(refine_tau)
         if verbose:
             if i % 10 == 0:
                 print(msg.format(i, dirm_solver.distance, dirm_solver.return_time))
