@@ -90,14 +90,19 @@ def test_floquet_multiplier():
     multiplier, _ = stability.compute_floquet_multiplier(solve, init_cond, period)
     assert np.allclose(abs(multiplier), 1.0, rtol=0.0, atol=1e-10)
 
-    multiplier = multiplier[multiplier.imag >= 0.0]
-    freqs = np.angle(multiplier) / period
-    freqs.sort()
+    multiplier = sorted(multiplier, key=lambda x: x.real)
 
-    shift_om3 = (2.0 * np.pi) / period
-    om1 = freqs[0] + shift_om3
-    om2 = freqs[1] + 3 * shift_om3
-    om3 = freqs[2] + 3 * shift_om3
+    def complex_arg(x):
+        if x.imag >= 0.0:
+            return np.angle(x)
+        else:
+            return np.angle(np.conjugate(x))
+
+    freqs = sorted(complex_arg(x) / period for x in multiplier[::2])
+
+    om1 = (2.0 * np.pi) / period
+    om2 = freqs[1] + 3 * om1
+    om3 = freqs[2] + 3 * om1
 
     abs_tol = 1e-5
     assert math.isclose(om1, 0.2966418, rel_tol=0.0, abs_tol=abs_tol)
