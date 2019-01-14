@@ -66,6 +66,52 @@ def test_max_ofli_limit():
     assert math.isclose(91.1161972, time, rel_tol=1e-6, abs_tol=1e-6)
 
 
+def test_ofli_parallel():
+    mu = 0.01215
+
+    taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
+    parallel_solve = stability.generate_ofli_integrator(
+        taylor_params, 100.0, parallel=True
+    )
+
+    init_cond_template = np.array(
+        [
+            0.440148176542848,
+            0.783403421942971,
+            0.0,
+            -0.905419824338076,
+            0.540413382924902,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    )
+    init_conds = []
+    for i in range(6):
+        init_cond = init_cond_template.copy()
+        init_cond[6 + i] += 1.0
+        init_conds.append(init_cond)
+    init_conds = np.array(init_conds)
+
+    ofli, _ = parallel_solve(init_conds)
+
+    ofli_ref = np.array(
+        [
+            3.3844254390624933,
+            4.3703843414232075,
+            0.16896605328460246,
+            4.248470717714327,
+            3.996114068586288,
+            0.010722916367483078,
+        ]
+    )
+    assert np.allclose(ofli, ofli_ref, rtol=1e-10, atol=1e-10)
+
+
 def test_floquet_multiplier():
     mu = 0.01215
 
