@@ -69,16 +69,28 @@ def H_grad(mu, state):
     r1 = np.sqrt((x + mu) * (x + mu) + y * y + z * z)
     r2 = np.sqrt((x + mu - 1) * (x + mu - 1) + y * y + z * z)
 
-    grad[0] = (
-        -py + (1 - mu) * (x + mu) / (r1 * r1 * r1) + mu * (x + mu - 1) / (r2 * r2 * r2)
-    )
-    grad[1] = px + y * ((1 - mu) / (r1 * r1 * r1) + mu / (r2 * r2 * r2))
-    grad[2] = z * ((1 - mu) / (r1 * r1 * r1) + mu / (r2 * r2 * r2))
+    r2_pow3 = r2 * r2 * r2
+
+    grad[0] = -py + (1 - mu) * (x + mu) / (r1 * r1 * r1) + mu * (x + mu - 1) / r2_pow3
+    grad[1] = px + y * ((1 - mu) / (r1 * r1 * r1) + mu / r2_pow3)
+    grad[2] = z * ((1 - mu) / (r1 * r1 * r1) + mu / r2_pow3)
     grad[3] = px + y
     grad[4] = py - x
     grad[5] = pz
 
-    norm = np.linalg.norm(grad)
-    grad = grad / norm
-
     return grad
+
+
+def generate_ofli_init_func(mu):
+    def generate_ofli_init_cond(state):
+        init_cond = np.empty(12)
+
+        grad = H_grad(mu, state)
+        norm = np.linalg.norm(grad)
+
+        init_cond[:6] = state
+        init_cond[6:] = grad / norm
+
+        return init_cond
+
+    return generate_ofli_init_cond
