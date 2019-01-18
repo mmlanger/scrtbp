@@ -91,7 +91,10 @@ def generate_adaptive_stepper(TaylorExpansionClass):
 
             self.__step = self.safety_fac * min(estimate1, estimate2)
 
-            # defect control
+            if np.isnan(self.__step):
+                raise exceptions.StepControlFailure
+
+            # refine via defect control
             for _ in range(self.defect_iters):
                 self.expansion.tangent(self.__step, self.defect_rhs_diff)
 
@@ -106,7 +109,7 @@ def generate_adaptive_stepper(TaylorExpansionClass):
                 else:
                     return
 
-            raise exceptions.DefectControlFailure
+            raise exceptions.StepControlFailure
 
         def advance(self):
             self.expansion.advance(self.step)

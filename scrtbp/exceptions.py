@@ -2,7 +2,7 @@ class MaxStepsExceeded(Exception):
     pass
 
 
-class DefectControlFailure(Exception):
+class StepControlFailure(Exception):
     pass
 
 

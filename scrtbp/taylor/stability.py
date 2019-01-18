@@ -97,7 +97,7 @@ def generate_ofli_integrator(
     max_ofli=None,
     max_event_steps=1000000,
     max_steps=1000000000,
-    parallel=False
+    parallel=False,
 ):
     TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
@@ -164,6 +164,7 @@ def generate_ofli_integrator(
             return ofli_val, ofli_time
 
     if parallel:
+
         @nb.njit(parallel=True)
         def parallel_ofli(init_conds, init_t0=0.0):
             n = init_conds.shape[0]

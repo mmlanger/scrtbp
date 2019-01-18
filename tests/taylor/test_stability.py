@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 
+from scrtbp import exceptions
 from scrtbp.system import coeffs
 from scrtbp.taylor import stability, integrators
 
@@ -31,6 +32,41 @@ def test_ofli_basic():
 
     ofli, _ = solve(init_cond)
     assert math.isclose(4.163497918, ofli, rel_tol=1e-6, abs_tol=1e-6)
+
+
+def test_ofli_overflow():
+    mu = 0.01215
+
+    taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
+    solve = stability.generate_ofli_integrator(
+        taylor_params, 100.0, order=50, tol_abs=1e-5, tol_rel=1e-5
+    )
+
+    init_cond = np.array(
+        [
+            0.39785,
+            0.7101408311032396,
+            0.0,
+            -0.998522098295406,
+            0.5499388898599199,
+            0.0,
+            0.3757658020984179,
+            0.6096142141175671,
+            0.0,
+            -0.6173786243534443,
+            0.3255982280520004,
+            0.0,
+        ]
+    )
+
+    try:
+        solve(init_cond)
+    except exceptions.StepControlFailure:
+        assert True
+    except:
+        assert False
+    else:
+        assert False
 
 
 def test_max_ofli_limit():
