@@ -97,6 +97,7 @@ def generate_ofli_integrator(
     max_ofli=None,
     max_event_steps=1000000,
     max_steps=1000000000,
+    py_exit_condition=None,
     parallel=False,
 ):
     TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
@@ -113,6 +114,15 @@ def generate_ofli_integrator(
         def eval(self, delta_t):
             return self.ofli_stepper.compute_ofli(delta_t) - max_ofli
 
+    if py_exit_condition is None:
+
+        @nb.njit
+        def exit_condition(state):
+            return False
+
+    else:
+        exit_condition = nb.njit(py_exit_condition)
+
     if max_ofli:
 
         @nb.njit
@@ -125,21 +135,24 @@ def generate_ofli_integrator(
             while ofli_stepper.valid():
                 next_ofli = ofli_stepper.compute_ofli(ofli_stepper.stepper.step)
 
-                if next_ofli > max_ofli:
-                    func_adapter = OfliFuncAdapter(ofli_stepper)
-                    target_step = root.solve_root(
-                        func_adapter, 0.0, ofli_stepper.next_t - ofli_stepper.t
-                    )
+                if next_ofli > max_ofli or ofli_stepper.next_t > max_time:
+                    if next_ofli > max_ofli:
+                        func_adapter = OfliFuncAdapter(ofli_stepper)
+                        target_step = root.solve_root(
+                            func_adapter, 0.0, ofli_stepper.next_t - ofli_stepper.t
+                        )
+                    else:
+                        target_step = max_time - ofli_stepper.t
                     ofli_val = ofli_stepper.compute_ofli(target_step)
                     ofli_time = ofli_stepper.t + target_step
                     break
-                elif ofli_stepper.next_t > max_time:
-                    target_step = max_time - ofli_stepper.t
-                    ofli_val = ofli_stepper.compute_ofli(target_step)
-                    ofli_time = ofli_stepper.t + target_step
+
+                ofli_stepper.advance()
+
+                if exit_condition(ofli_stepper.stepper.expansion.state):
+                    ofli_val = ofli_stepper.compute_ofli(0.0)
+                    ofli_time = ofli_stepper.t
                     break
-                else:
-                    ofli_stepper.advance()
 
             return ofli_val, ofli_time
 
@@ -158,8 +171,13 @@ def generate_ofli_integrator(
                     ofli_time = ofli_stepper.t + target_step
                     ofli_val = ofli_stepper.compute_ofli(target_step)
                     break
-                else:
-                    ofli_stepper.advance()
+
+                ofli_stepper.advance()
+
+                if exit_condition(ofli_stepper.stepper.expansion.state):
+                    ofli_val = ofli_stepper.compute_ofli(0.0)
+                    ofli_time = ofli_stepper.t
+                    break
 
             return ofli_val, ofli_time
 

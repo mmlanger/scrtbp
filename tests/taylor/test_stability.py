@@ -39,7 +39,7 @@ def test_ofli_overflow():
 
     taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
     solve = stability.generate_ofli_integrator(
-        taylor_params, 100.0, order=50, tol_abs=1e-5, tol_rel=1e-5
+        taylor_params, 100.0, order=20, tol_abs=1e-5, tol_rel=1e-5
     )
 
     init_cond = np.array(
@@ -67,6 +67,45 @@ def test_ofli_overflow():
         assert False
     else:
         assert False
+
+
+def test_ofli_overflow_prevention():
+    mu = 0.01215
+
+    def exit_criterion(state):
+        y = state[0]
+        return y < 0.1
+
+    taylor_params = coeffs.generate_variational_taylor_coeffs(mu)
+    solve = stability.generate_ofli_integrator(
+        taylor_params,
+        100.0,
+        order=20,
+        tol_abs=1e-5,
+        tol_rel=1e-5,
+        py_exit_condition=exit_criterion,
+    )
+
+    init_cond = np.array(
+        [
+            0.39785,
+            0.7101408311032396,
+            0.0,
+            -0.998522098295406,
+            0.5499388898599199,
+            0.0,
+            0.3757658020984179,
+            0.6096142141175671,
+            0.0,
+            -0.6173786243534443,
+            0.3255982280520004,
+            0.0,
+        ]
+    )
+    
+    ofli, t = solve(init_cond)
+    assert math.isclose(2.2155615580957826, ofli, rel_tol=1e-6, abs_tol=1e-6)
+    assert math.isclose(1.7239679988611463, t, rel_tol=1e-6, abs_tol=1e-6)
 
 
 def test_max_ofli_limit():

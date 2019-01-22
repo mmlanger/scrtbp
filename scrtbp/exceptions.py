@@ -6,6 +6,10 @@ class StepControlFailure(Exception):
     pass
 
 
+class ConditionExit(Exception):
+    pass
+
+
 class InvalidBrackets(Exception):
     pass
 
