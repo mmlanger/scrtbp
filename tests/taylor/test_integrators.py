@@ -61,7 +61,6 @@ def test_adaptive_fixed_integration():
 
     taylor_params = coeffs.generate_taylor_coeffs(mu)
     order = 20
-    step = 5.0
 
     def exit_condition(state):
         y = state[1]
@@ -69,7 +68,6 @@ def test_adaptive_fixed_integration():
 
     solve = integrators.generate_fixed_step_adaptive_integrator(
         taylor_params,
-        step,
         order,
         tol_abs=1e-16,
         tol_rel=1e-16,
@@ -80,7 +78,7 @@ def test_adaptive_fixed_integration():
         [0.39785, 0.7101408311032396, 0.0, -0.9860206223973105, 0.5715886728443681, 0.0]
     )
 
-    points = solve(init_cond, 20)
+    points = solve(init_cond, 20, 5.0)
 
     assert points.shape[0] == 20
 
@@ -102,7 +100,6 @@ def test_adaptive_fixed_integration_with_exit():
 
     taylor_params = coeffs.generate_taylor_coeffs(mu)
     order = 20
-    step = 5.0
 
     def exit_condition(state):
         y = state[1]
@@ -110,7 +107,6 @@ def test_adaptive_fixed_integration_with_exit():
 
     solve = integrators.generate_fixed_step_adaptive_integrator(
         taylor_params,
-        step,
         order,
         tol_abs=1e-16,
         tol_rel=1e-16,
@@ -121,7 +117,7 @@ def test_adaptive_fixed_integration_with_exit():
         [0.39785, 0.7101408311032396, 0.0, -0.9860206223973105, 0.5715886728443681, 0.0]
     )
 
-    points = solve(init_cond, 1000)
+    points = solve(init_cond, 1000, step=5.0)
     assert points.shape[0] == 50
 
     state_before_exit = np.array(

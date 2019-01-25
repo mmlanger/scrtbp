@@ -78,7 +78,6 @@ def generate_adaptive_dense_integrator(
 
 def generate_fixed_step_adaptive_integrator(
     taylor_params,
-    step,
     order=20,
     tol_abs=1e-16,
     tol_rel=1e-16,
@@ -115,7 +114,7 @@ def generate_fixed_step_adaptive_integrator(
         return points
 
     @nb.njit
-    def fixed_adaptive_integration(init_cond, n_points, init_t0=0.0):
+    def fixed_adaptive_integration(init_cond, n_points, step, init_t0=0.0):
         points = [init_cond]
         temp_point = np.zeros(state_dim)
 
