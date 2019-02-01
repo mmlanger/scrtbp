@@ -16,7 +16,7 @@ def test_escape_orbit():
         return np.linalg.norm(point) > 2.0
 
     order = 20
-    escape_solve = escape.generate_adaptive_escape_solver(
+    escape_solve = escape.generate_poincare_escape_solver(
         taylor_params, poincare_func, escape_condition, order
     )
 

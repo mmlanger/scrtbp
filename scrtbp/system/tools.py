@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def generate_tools(mu):
+def generate_rhs(mu):
     def rhs(state, t):
         x = state[0]
         y = state[1]
@@ -27,8 +27,9 @@ def generate_tools(mu):
             ]
         )
 
-        return rhs
+    return rhs
 
+def generate_jacobi(mu):
     def energy(state):
         x = state[0]
         y = state[1]
@@ -49,7 +50,7 @@ def generate_tools(mu):
     def jacobi(state):
         return -2.0 * energy(state)
 
-    return rhs, energy, jacobi
+    return jacobi
 
 
 def H_grad(mu, state):
