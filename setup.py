@@ -1,8 +1,4 @@
-"""The setuptools based setup module.
-Based on:
-https://packaging.python.org/en/latest/distributing.html
-https://github.com/pypa/sampleproject
-"""
+"""The setuptools based setup module."""
 
 import os
 from setuptools import setup, find_packages
