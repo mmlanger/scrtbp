@@ -55,7 +55,7 @@ def test_adaptive_step_escape_orbit():
 
     order = 20
     t_max = 10000.0
-    escape_solve = escape.generate_adaptive_escape_solver(
+    escape_solve = escape.generate_adapt_prec_escape_solver(
         taylor_params, escape_char_func, t_max, order
     )
 
