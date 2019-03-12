@@ -51,7 +51,7 @@ def generate_poincare_escape_solver(
     return solve_escape
 
 
-def generate_adaptive_escape_solver(
+def generate_adapt_prec_escape_solver(
     taylor_params,
     py_exit_function,
     max_time: float,
@@ -61,24 +61,13 @@ def generate_adaptive_escape_solver(
     max_steps: int = 1000000000,
     one_way_mode: bool = False,
 ):
+    """A precise solver for the exact escape time of a trajectory."""
     TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
     FuncAdapter = expansion.generate_func_adapter(py_exit_function)
     EventObserver = events.generate_event_observer(Stepper, FuncAdapter, one_way_mode)
 
-    if one_way_mode:
-
-        @nb.njit
-        def root_condition(fa, fb):
-            return fa > 0.0 > fb  # only + to - roots are detected
-
-    else:
-
-        @nb.njit
-        def root_condition(fa, fb):
-            return fa * fb < 0.0
-
-    # @nb.njit
+    @nb.njit
     def solve_escape(init_cond, n_points, init_t0=0.0):
         state = init_cond.copy()
 
