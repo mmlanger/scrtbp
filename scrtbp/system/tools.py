@@ -29,6 +29,7 @@ def generate_rhs(mu):
 
     return rhs
 
+
 def generate_jacobi(mu):
     def energy(state):
         x = state[0]
@@ -95,3 +96,14 @@ def generate_ofli_init_func(mu):
         return init_cond
 
     return generate_ofli_init_cond
+
+
+def generate_escape_box_func(center_x, center_y, center_z, Lx, Ly, Lz):
+    def escape_char_func(state):
+        diff_x = abs(state[0] - center_x) / Lx
+        diff_y = abs(state[1] - center_y) / Ly
+        diff_z = abs(state[2] - center_z) / Lz
+        return 1.0 - 2.0 * max(diff_x, diff_y, diff_z)
+
+    return escape_char_func
+
