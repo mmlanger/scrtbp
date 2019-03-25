@@ -96,7 +96,7 @@ def generate_adaptive_escape_event_solver(
     order: int = 20,
     tol_abs: float = 1e-16,
     tol_rel: float = 1e-16,
-    max_event_steps=10000000,
+    max_event_steps: int = 10000000,
     max_steps: int = 1000000000,
     one_way_mode: bool = True,
 ):
@@ -144,3 +144,61 @@ def generate_adaptive_escape_event_solver(
         return points, times
 
     return solve_points
+
+
+# def generate_adaptive_escape_integration(
+#     taylor_params,
+#     py_exit_function,
+#     order: int = 20,
+#     tol_abs: float = 1e-16,
+#     tol_rel: float = 1e-16,
+#     max_steps: int = 1000000000,
+#     one_way_mode: bool = True,
+# ):
+#     state_dim = taylor_params[1]
+
+#     TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
+#     Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
+#     ExitFuncAdapter = expansion.generate_func_adapter(py_exit_function)
+#     ExitObserver = events.generate_event_observer(
+#         Stepper, ExitFuncAdapter, one_way_mode
+#     )
+
+#     @nb.njit
+#     def integrate(init_cond, n_points, step, init_t0=0.0):
+#         points = np.empty((n_points, state_dim))
+#         points[0] = init_cond
+#         times = np.empty(n_points)
+
+#         stepper = Stepper(init_cond, init_t0, order, tol_abs, tol_rel)
+#         exit_observer = ExitObserver(stepper)
+
+#         i = 1
+#         n_steps = 0
+#         target_t = init_t0 + step
+
+#         while stepper.valid() and n_steps < max_steps:
+#             while target_t < stepper.next_t:
+#                 # target_t is in [stepper.t, stepper.next_t)
+#                 if stepper.t == target_t:
+#                     points[i] = stepper.expansion.state
+#                 else:
+#                     target_step = target_t - stepper.t
+#                     stepper.expansion.eval(target_step, points[i])
+
+#                 if exit_observer.event_detected():
+#                     return points[:i], times[:i]
+#                 else:
+#                     i += 1
+#                     target_t = init_t0 + i * step
+
+#                     if not i < n_points:
+#                         return points
+
+#             stepper.advance()
+#         else:
+#             raise exceptions.MaxStepsExceeded
+
+#         return points, times
+
+#     return integrate
