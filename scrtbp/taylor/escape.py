@@ -68,7 +68,7 @@ def generate_adapt_prec_escape_solver(
     EventObserver = events.generate_event_observer(Stepper, FuncAdapter, one_way_mode)
 
     @nb.njit
-    def solve_escape(init_cond, n_points, init_t0=0.0):
+    def solve_escape(init_cond, init_t0=0.0):
         state = init_cond.copy()
 
         stepper = Stepper(init_cond, init_t0, order, tol_abs, tol_rel)
@@ -81,8 +81,13 @@ def generate_adapt_prec_escape_solver(
                 break
             stepper.advance()
             i += 1
+            if stepper.t > max_time:
+                raise exceptions.MaxTimeExceeded
         else:
             raise exceptions.MaxStepsExceeded
+
+        if time > max_time:
+            raise exceptions.MaxTimeExceeded
 
         return state, time
 

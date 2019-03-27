@@ -2,6 +2,10 @@ class MaxStepsExceeded(Exception):
     pass
 
 
+class MaxTimeExceeded(Exception):
+    pass
+
+
 class StepControlFailure(Exception):
     pass
 

@@ -4,9 +4,10 @@ import numpy as np
 
 from scrtbp.system import coeffs, sections, tools
 from scrtbp.taylor import escape
+from scrtbp import exceptions
 
 
-def test_fixed_step_escape_orbit():
+def test_poincare_escape_orbit():
     mu = 0.01215
 
     taylor_params = coeffs.generate_taylor_coeffs(mu)
@@ -45,7 +46,33 @@ def test_fixed_step_escape_orbit():
     assert math.isclose(t, escaped_time, rel_tol=rel_tol, abs_tol=abs_tol)
 
 
-def test_adapt_exact_step_escape_orbit():
+def test_max_time_exception():
+    mu = 0.01215
+
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
+
+    def escape_char_func(point):
+        return point[1] - 0.2
+
+    order = 20
+    init_cond = np.array(
+        [0.42, 0.783403421942971, 0.1, -0.905419824338076, 0.540413382924902, 0.0]
+    )
+    # escaped_time = 784.0811561375356
+
+    for t_max in [700.0, 784.0]:
+        escape_solve = escape.generate_adapt_prec_escape_solver(
+            taylor_params, escape_char_func, t_max, order
+        )
+        try:
+            escape_solve(init_cond)
+        except exceptions.MaxTimeExceeded:
+            assert True
+        else:
+            assert False
+
+
+def test_adapt_exact_escape_orbit():
     mu = 0.01215
 
     taylor_params = coeffs.generate_taylor_coeffs(mu)
@@ -63,7 +90,7 @@ def test_adapt_exact_step_escape_orbit():
         [0.42, 0.783403421942971, 0.1, -0.905419824338076, 0.540413382924902, 0.0]
     )
 
-    point, t = escape_solve(init_cond, 10)
+    point, t = escape_solve(init_cond)
 
     escaped_point = np.array(
         [
@@ -101,7 +128,7 @@ def test_escape_box_func():
         [0.42, 0.783403421942971, 0.1, -0.905419824338076, 0.540413382924902, 0.0]
     )
 
-    point, t = escape_solve(init_cond, 10)
+    point, t = escape_solve(init_cond)
 
     escaped_point = np.array(
         [
