@@ -149,3 +149,40 @@ def generate_fixed_step_adaptive_integrator(
         raise exceptions.MaxStepsExceeded
 
     return fixed_adaptive_integration
+
+
+def generate_fixed_step_adaptive_generator(
+    taylor_params,
+    order=20,
+    tol_abs=1e-16,
+    tol_rel=1e-16,
+):
+    state_dim = taylor_params[1]
+
+    TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
+    Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
+
+    @nb.njit
+    def fixed_adaptive_integration(init_cond, step, init_t0=0.0):
+        temp_point = np.zeros(state_dim)
+
+        stepper = Stepper(init_cond, init_t0, order, tol_abs, tol_rel)
+
+        i = 1
+        target_t = init_t0 + step
+        while stepper.valid():
+            while target_t < stepper.next_t:
+                # target_t is in [stepper.t, stepper.next_t)
+                if stepper.t == target_t:
+                    yield stepper.expansion.state.copy()
+                else:
+                    target_step = target_t - stepper.t
+                    stepper.expansion.eval(target_step, temp_point)
+                    yield temp_point.copy()
+
+                i += 1
+                target_t = init_t0 + i * step
+
+            stepper.advance()
+
+    return fixed_adaptive_integration
