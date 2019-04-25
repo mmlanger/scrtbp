@@ -1,3 +1,5 @@
+from itertools import islice
+
 import numpy as np
 
 from scrtbp.system import coeffs
@@ -131,3 +133,52 @@ def test_adaptive_fixed_integration_with_exit():
         ]
     )
     assert np.allclose(state_before_exit, points[-1], 0.0, 1e-14)
+
+
+def test_adaptive_integration_generator():
+    mu = 0.01215
+
+    taylor_params = coeffs.generate_taylor_coeffs(mu)
+    order = 20
+
+    point_generator = integrators.generate_fixed_step_adaptive_generator(
+        taylor_params, order, tol_abs=1e-16, tol_rel=1e-16
+    )
+
+    init_cond = np.array(
+        [0.39785, 0.7101408311032396, 0.0, -0.9860206223973105, 0.5715886728443681, 0.0]
+    )
+
+    step = 0.5
+    
+    points = np.array(list(islice(point_generator(init_cond, step), None, 3)))
+
+    precomputed_points = np.array(
+        [
+            [
+                0.2666141303190991,
+                0.792529045113351,
+                0.0,
+                -1.0335204496266346,
+                0.41976871859252407,
+                0.0,
+            ],
+            [
+                0.16324734999014953,
+                0.8621106824396213,
+                0.0,
+                -1.030510584313352,
+                0.2881080551484904,
+                0.0,
+            ],
+            [
+                0.09972978852637138,
+                0.9171405586713944,
+                0.0,
+                -1.0036799157801077,
+                0.19450015404185825,
+                0.0,
+            ],
+        ]
+    )
+    assert np.allclose(precomputed_points, points, 0.0, 1e-15)
