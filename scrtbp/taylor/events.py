@@ -170,3 +170,42 @@ def generate_adaptive_event_solver(
         return points, times
 
     return solve_points
+
+
+def generate_adaptive_event_generator(
+    taylor_params,
+    event_func,
+    order=20,
+    tol_abs=1e-16,
+    tol_rel=1e-10,
+    max_event_steps=1000000,
+    max_steps=1000000000,
+    one_way_mode=True,
+):
+    state_dim = taylor_params[1]
+
+    TaylorExpansion = expansion.generate_taylor_expansion(*taylor_params)
+    FuncAdapter = expansion.generate_func_adapter(event_func)
+    Stepper = steppers.generate_adaptive_stepper(TaylorExpansion)
+    StepLimiterProxy = steppers.generate_step_limiter_proxy(Stepper)
+    EventObserver = generate_event_observer(Stepper, FuncAdapter, one_way_mode)
+
+    @nb.njit
+    def event_generator(input_state, t0=0.0):
+        state = np.empty(state_dim)
+
+        stepper = Stepper(input_state, t0, order, tol_abs, tol_rel)
+        observer = EventObserver(stepper)
+        limiter = StepLimiterProxy(stepper, max_event_steps, max_steps)
+
+        while limiter.valid():
+            if observer.event_detected():
+                t = observer.extract_event(state)
+                yield state.copy(), t
+                limiter.reset_constraint()
+                
+            limiter.advance()
+        else:
+            raise exceptions.MaxStepsExceeded
+
+    return event_generator
